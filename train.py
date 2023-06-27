@@ -13,6 +13,8 @@ import sys
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
 
+from config import config
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def is_running_in_jupyter():
@@ -86,6 +88,8 @@ else:
     parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
     FLAGS = parser.parse_args()
 
+config.set_value('paths', 'BASE_DIR', BASE_DIR)
+config.save()
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, 'models'))
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
