@@ -11,7 +11,7 @@ from transform_nets import input_transform_net, feature_transform_net
 
 def placeholder_inputs(batch_size, num_point):
     pointclouds_pl = tf.Variable(tf.ones(shape=(batch_size, num_point, 3)), dtype=tf.float32) # CHANGED: tf.placeholder(tf.float32, shape=(batch_size, num_point, 3))
-    labels_pl = tf.Variable(tf.ones(shape=(batch_size)), dtype=tf.int32) # CHANGED: tf.placeholder(tf.int32, shape=(batch_size))
+    labels_pl = tf.Variable(tf.ones(shape=(batch_size), dtype=tf.int32), dtype=tf.int32) # CHANGED: tf.placeholder(tf.int32, shape=(batch_size))
     return pointclouds_pl, labels_pl
 
 
