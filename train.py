@@ -2,11 +2,14 @@ import argparse
 import math
 import h5py
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
 import socket
 import importlib
 import os
 import sys
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
@@ -138,7 +141,7 @@ def train():
     with tf.Graph().as_default():
         with tf.device('/gpu:'+str(GPU_INDEX)):
             pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
-            is_training_pl = tf.Variable((tf.ones(shape=()) == 1), dtype=tf.bool) # CHANGED: tf.placeholder(tf.bool, shape=())
+            is_training_pl = tf.placeholder(tf.bool, shape=()) # CHANGED: tf.Variable((tf.ones(shape=()) == 1), dtype=tf.bool)
             print(is_training_pl)
             
             # Note the global_step=batch parameter to minimize. 
