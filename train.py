@@ -1,3 +1,5 @@
+# **** START Import Section
+
 import argparse
 import math
 import h5py
@@ -12,52 +14,60 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(BASE_DIR)
-sys.path.append(os.path.join(BASE_DIR, 'models'))
-sys.path.append(os.path.join(BASE_DIR, 'utils'))
-import provider
-import tf_util
 
 def is_running_in_jupyter():
     try:
         # Check if the 'get_ipython' function exists
         shell = get_ipython().__class__.__name__
 
-        RunningInCOLAB = 'google.colab' in str(get_ipython())
-
         if shell == 'ZMQInteractiveShell':
             return True  # Jupyter Notebook or JupyterLab
-        elif RunningInCOLAB:
+        else:
+            return False  # Other interactive shell
+    except NameError:
+        return False  # Not in an interactive shell
+
+def is_running_in_colab():
+    try:
+        # Check if the 'get_ipython' function exists
+
+        RunningInCOLAB = 'google.colab' in str(get_ipython())
+
+        if RunningInCOLAB:
             return True
         else:
             return False  # Other interactive shell
     except NameError:
         return False  # Not in an interactive shell
 
+class Custom_Parser():
+    gpu = 0
+    model = 'pointnet_cls'
+    log_dir = 'log'
+    num_point = 1024
+    max_epoch = 2
+    batch_size = 32
+    learning_rate = 0.001
+    momentum = 0.9
+    optimizer = 'adam'
+    decay_step = 200000
+    decay_rate = 0.7
 
-
+    def __init__(self):
+        pass
 
 # differentiate between running in an interactive shell vs shell
 if is_running_in_jupyter():
     print("*** Code is running in an interactive Shell. ***")
 
-    class Custom_Parser():
-        gpu = 0
-        model = 'pointnet_cls'
-        log_dir = 'log'
-        num_point = 1024
-        max_epoch = 2
-        batch_size = 32
-        learning_rate = 0.001
-        momentum = 0.9
-        optimizer = 'adam'
-        decay_step = 200000
-        decay_rate = 0.7
+    parser = Custom_Parser()
 
-        def __init__(self):
-            pass
+elif is_running_in_colab():
+    print("*** Code is running in Google Colab. ***")
 
-        parser = Custom_Parser()
+    BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
+
+    parser = Custom_Parser()
 
 else:
     print("*** Code is running in a Shell. ***")
@@ -75,6 +85,15 @@ else:
     parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
     parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
     FLAGS = parser.parse_args()
+
+sys.path.append(BASE_DIR)
+sys.path.append(os.path.join(BASE_DIR, 'models'))
+sys.path.append(os.path.join(BASE_DIR, 'utils'))
+
+import provider
+import tf_util
+
+# **** END Import Section
 
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
