@@ -15,20 +15,63 @@ sys.path.append(os.path.join(BASE_DIR, 'utils'))
 import provider
 import tf_util
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
-parser.add_argument('--model', default='pointnet_cls', help='Model name: pointnet_cls or pointnet_cls_basic [default: pointnet_cls]')
-parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
-parser.add_argument('--num_point', type=int, default=1024, help='Point Number [256/512/1024/2048] [default: 1024]')
-parser.add_argument('--max_epoch', type=int, default=250, help='Epoch to run [default: 250]')
-parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
-parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
-parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
-parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
-parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
-parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
-FLAGS = parser.parse_args()
+def is_running_in_jupyter():
+    try:
+        # Check if the 'get_ipython' function exists
+        shell = get_ipython().__class__.__name__
 
+        RunningInCOLAB = 'google.colab' in str(get_ipython())
+
+        if shell == 'ZMQInteractiveShell':
+            return True  # Jupyter Notebook or JupyterLab
+        elif RunningInCOLAB:
+            return True
+        else:
+            return False  # Other interactive shell
+    except NameError:
+        return False  # Not in an interactive shell
+
+
+
+
+# differentiate between running in an interactive shell vs shell
+if is_running_in_jupyter():
+    print("*** Code is running in an interactive Shell. ***")
+
+    class Custom_Parser():
+        gpu = 0
+        model = 'pointnet_cls'
+        log_dir = 'log'
+        num_point = 1024
+        max_epoch = 2
+        batch_size = 32
+        learning_rate = 0.001
+        momentum = 0.9
+        optimizer = 'adam'
+        decay_step = 200000
+        decay_rate = 0.7
+
+        def __init__(self):
+            pass
+
+        parser = Custom_Parser()
+
+else:
+    print("*** Code is running in a Shell. ***")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
+    parser.add_argument('--model', default='pointnet_cls', help='Model name: pointnet_cls or pointnet_cls_basic [default: pointnet_cls]')
+    parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
+    parser.add_argument('--num_point', type=int, default=1024, help='Point Number [256/512/1024/2048] [default: 1024]')
+    parser.add_argument('--max_epoch', type=int, default=250, help='Epoch to run [default: 250]')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
+    parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
+    parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
+    parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
+    parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
+    FLAGS = parser.parse_args()
 
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
@@ -95,7 +138,7 @@ def train():
     with tf.Graph().as_default():
         with tf.device('/gpu:'+str(GPU_INDEX)):
             pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
-            is_training_pl = tf.placeholder(tf.bool, shape=())
+            is_training_pl = tf.Variable(tf.ones(shape=()), dtype=tf.bool) # CHANGED: tf.placeholder(tf.bool, shape=())
             print(is_training_pl)
             
             # Note the global_step=batch parameter to minimize. 
