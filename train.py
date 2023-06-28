@@ -55,21 +55,21 @@ class Custom_Parser():
     decay_step = 200000
     decay_rate = 0.7
 
-    def __init__(self):
-        pass
+    def __init__(self, colab = 'False'):
+        self.colab = colab
 
 # differentiate between running in an interactive shell vs shell
 RunningInCOLAB = False
 if is_running_in_jupyter():
     print("*** Code is running in an interactive Shell. ***")
 
-    parser = Custom_Parser()
+    parser = Custom_Parser(colab = True)
 
 elif is_running_in_colab():
     print("*** Code is running in Google Colab. ***")
 
     RunningInCOLAB = True
-    BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
+    # BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
 
     parser = Custom_Parser()
 
@@ -88,12 +88,18 @@ else:
     parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
     parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
     parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
+    parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
     FLAGS = parser.parse_args()
+
+# Check if code is executed in colab environment
+if parser.colab == 'True':
+    BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
 
 config.set_value('paths', 'BASE_DIR', BASE_DIR)
 config.set_value('paths', 'REPO_NAME', 'PointGCNs')
-config.set_value('system', 'RunningInCOLAB', str(RunningInCOLAB))
+config.set_value('system', 'RunningInCOLAB', parser.colab)
 config.save()
+
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, 'models'))
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
