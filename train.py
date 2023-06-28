@@ -59,6 +59,7 @@ class Custom_Parser():
         pass
 
 # differentiate between running in an interactive shell vs shell
+RunningInCOLAB = False
 if is_running_in_jupyter():
     print("*** Code is running in an interactive Shell. ***")
 
@@ -67,6 +68,7 @@ if is_running_in_jupyter():
 elif is_running_in_colab():
     print("*** Code is running in Google Colab. ***")
 
+    RunningInCOLAB = True
     BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
 
     parser = Custom_Parser()
@@ -89,6 +91,8 @@ else:
     FLAGS = parser.parse_args()
 
 config.set_value('paths', 'BASE_DIR', BASE_DIR)
+config.set_value('paths', 'REPO_NAME', 'PointGCNs')
+config.set_value('system', 'RunningInCOLAB', RunningInCOLAB)
 config.save()
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, 'models'))
