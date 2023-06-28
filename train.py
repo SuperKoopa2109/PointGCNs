@@ -118,7 +118,7 @@ if FLAGS.colab == 'True':
 
 config.set_value('paths', 'BASE_DIR', BASE_DIR)
 config.set_value('paths', 'REPO_NAME', 'PointGCNs')
-config.set_value('system', 'RunningInCOLAB', parser.colab)
+config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
 config.save()
 
 sys.path.append(BASE_DIR)
