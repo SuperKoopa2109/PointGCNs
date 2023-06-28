@@ -113,8 +113,8 @@ else:
 FLAGS = parser.parse_args()
 
 # Check if code is executed in colab environment
-if FLAGS.colab == 'True':
-    BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
+# if FLAGS.colab == 'True':
+    # BASE_DIR = os.path.join(BASE_DIR, 'PointGCNs')
 
 config.set_value('paths', 'BASE_DIR', BASE_DIR)
 config.set_value('paths', 'REPO_NAME', 'PointGCNs')
@@ -145,8 +145,8 @@ MODEL_FILE = os.path.join(BASE_DIR, 'models', FLAGS.model+'.py')
 LOG_DIR = FLAGS.log_dir
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 os.system('cp %s %s' % (MODEL_FILE, LOG_DIR)) # bkp of model def
-if is_running_in_colab():
-    os.system('cp pointGCNs/train.py %s' % (LOG_DIR)) # bkp of train procedure
+if FLAGS.colab == 'True': #is_running_in_colab():
+    os.system('cp PointGCNs/train.py %s' % (LOG_DIR)) # bkp of train procedure
 else:
     os.system('cp train.py %s' % (LOG_DIR)) # bkp of train procedure
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
