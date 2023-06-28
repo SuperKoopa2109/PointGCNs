@@ -2,7 +2,14 @@ import os
 import sys
 import numpy as np
 import h5py
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+from config import config
+
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = config.get_value('paths', 'BASE_DIR')
+print(f'*********************************')
+print(f'BASE DIRECTORY: {BASE_DIR}')
+print(f'*********************************')
 sys.path.append(BASE_DIR)
 
 # Download dataset for point cloud classification
