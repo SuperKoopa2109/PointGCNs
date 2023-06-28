@@ -58,6 +58,25 @@ class Custom_Parser():
     def __init__(self, colab = 'False'):
         self.colab = colab
 
+    def parse_args(self):
+        return {
+            gpu: self.gpu,
+            model: self.model,
+            log_dir: self.log_dir,
+            num_point: self.num_point,
+            max_epoch: self.max_epoch,
+            batch_size: self.batch_size,
+            learning_rate: self.learning_rate,
+            momentum: self.momentum,
+            optimizer: self.optimizer,
+            decay_step: self.decay_step,
+            decay_rate: self.decay_rate,
+            colab: self.colab
+        }
+    
+    def parse_args(self):
+        return self
+
 # differentiate between running in an interactive shell vs shell
 RunningInCOLAB = False
 if is_running_in_jupyter():
@@ -89,10 +108,12 @@ else:
     parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
     parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
     parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
-    FLAGS = parser.parse_args()
+    # FLAGS = parser.parse_args()
+
+FLAGS = parser.parse_args()
 
 # Check if code is executed in colab environment
-if parser.colab == 'True':
+if FLAGS.colab == 'True':
     BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
 
 config.set_value('paths', 'BASE_DIR', BASE_DIR)
