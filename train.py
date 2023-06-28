@@ -92,7 +92,7 @@ else:
 
 config.set_value('paths', 'BASE_DIR', BASE_DIR)
 config.set_value('paths', 'REPO_NAME', 'PointGCNs')
-config.set_value('system', 'RunningInCOLAB', RunningInCOLAB)
+config.set_value('system', 'RunningInCOLAB', str(RunningInCOLAB))
 config.save()
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, 'models'))
