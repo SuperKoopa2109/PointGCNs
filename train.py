@@ -1,34 +1,134 @@
+# **** START Import Section
+
 import argparse
 import math
 import h5py
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
 import socket
 import importlib
 import os
 import sys
 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
+
+from config import config
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def is_running_in_jupyter():
+    try:
+        # Check if the 'get_ipython' function exists
+        shell = get_ipython().__class__.__name__
+
+        if shell == 'ZMQInteractiveShell':
+            return True  # Jupyter Notebook or JupyterLab
+        else:
+            return False  # Other interactive shell
+    except NameError:
+        return False  # Not in an interactive shell
+
+def is_running_in_colab():
+    try:
+        # Check if the 'get_ipython' function exists
+
+        RunningInCOLAB = 'google.colab' in str(get_ipython())
+
+        if RunningInCOLAB:
+            return True
+        else:
+            return False  # Other interactive shell
+    except NameError:
+        return False  # Not in an interactive shell
+
+class Custom_Parser():
+    gpu = 0
+    model = 'pointnet_cls'
+    log_dir = 'log'
+    num_point = 1024
+    max_epoch = 2
+    batch_size = 32
+    learning_rate = 0.001
+    momentum = 0.9
+    optimizer = 'adam'
+    decay_step = 200000
+    decay_rate = 0.7
+
+    def __init__(self, colab = 'False'):
+        self.colab = colab
+
+    def parse_args(self):
+        return {
+            gpu: self.gpu,
+            model: self.model,
+            log_dir: self.log_dir,
+            num_point: self.num_point,
+            max_epoch: self.max_epoch,
+            batch_size: self.batch_size,
+            learning_rate: self.learning_rate,
+            momentum: self.momentum,
+            optimizer: self.optimizer,
+            decay_step: self.decay_step,
+            decay_rate: self.decay_rate,
+            colab: self.colab
+        }
+    
+    def parse_args(self):
+        return self
+
+# differentiate between running in an interactive shell vs shell
+RunningInCOLAB = False
+if is_running_in_jupyter():
+    print("*** Code is running in an interactive Shell. ***")
+
+    parser = Custom_Parser(colab = True)
+
+elif is_running_in_colab():
+    print("*** Code is running in Google Colab. ***")
+
+    RunningInCOLAB = True
+    # BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
+
+    parser = Custom_Parser()
+
+else:
+    print("*** Code is running in a Shell. ***")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
+    parser.add_argument('--model', default='pointnet_cls', help='Model name: pointnet_cls or pointnet_cls_basic [default: pointnet_cls]')
+    parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
+    parser.add_argument('--num_point', type=int, default=1024, help='Point Number [256/512/1024/2048] [default: 1024]')
+    parser.add_argument('--max_epoch', type=int, default=250, help='Epoch to run [default: 250]')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
+    parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
+    parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
+    parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
+    parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
+    parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
+    # FLAGS = parser.parse_args()
+
+FLAGS = parser.parse_args()
+
+# Check if code is executed in colab environment
+# if FLAGS.colab == 'True':
+    # BASE_DIR = os.path.join(BASE_DIR, 'PointGCNs')
+
+config.set_value('paths', 'BASE_DIR', BASE_DIR)
+config.set_value('paths', 'REPO_NAME', 'PointGCNs')
+config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
+config.save()
+
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, 'models'))
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
+
 import provider
 import tf_util
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
-parser.add_argument('--model', default='pointnet_cls', help='Model name: pointnet_cls or pointnet_cls_basic [default: pointnet_cls]')
-parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
-parser.add_argument('--num_point', type=int, default=1024, help='Point Number [256/512/1024/2048] [default: 1024]')
-parser.add_argument('--max_epoch', type=int, default=250, help='Epoch to run [default: 250]')
-parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
-parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
-parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
-parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
-parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
-parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
-FLAGS = parser.parse_args()
-
+# **** END Import Section
 
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
@@ -45,7 +145,10 @@ MODEL_FILE = os.path.join(BASE_DIR, 'models', FLAGS.model+'.py')
 LOG_DIR = FLAGS.log_dir
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 os.system('cp %s %s' % (MODEL_FILE, LOG_DIR)) # bkp of model def
-os.system('cp train.py %s' % (LOG_DIR)) # bkp of train procedure
+if FLAGS.colab == 'True': #is_running_in_colab():
+    os.system('cp PointGCNs/train.py %s' % (LOG_DIR)) # bkp of train procedure
+else:
+    os.system('cp train.py %s' % (LOG_DIR)) # bkp of train procedure
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
 LOG_FOUT.write(str(FLAGS)+'\n')
 
@@ -62,6 +165,9 @@ HOSTNAME = socket.gethostname()
 # ModelNet40 official train/test split
 TRAIN_FILES = provider.getDataFiles( \
     os.path.join(BASE_DIR, 'data', 'modelnet40_ply_hdf5_2048', 'train_files.txt'))
+print('**********************************')
+print(f'TRAIN FILES: {TRAIN_FILES}')
+print('**********************************')
 TEST_FILES = provider.getDataFiles(\
     os.path.join(BASE_DIR, 'data', 'modelnet40_ply_hdf5_2048', 'test_files.txt'))
 
@@ -95,7 +201,7 @@ def train():
     with tf.Graph().as_default():
         with tf.device('/gpu:'+str(GPU_INDEX)):
             pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
-            is_training_pl = tf.placeholder(tf.bool, shape=())
+            is_training_pl = tf.placeholder(tf.bool, shape=()) # CHANGED: tf.Variable((tf.ones(shape=()) == 1), dtype=tf.bool)
             print(is_training_pl)
             
             # Note the global_step=batch parameter to minimize. 

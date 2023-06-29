@@ -2,7 +2,14 @@ import os
 import sys
 import numpy as np
 import h5py
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+from config import config
+
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = config.get_value('paths', 'BASE_DIR')
+print(f'*********************************')
+print(f'BASE DIRECTORY: {BASE_DIR}')
+print(f'*********************************')
 sys.path.append(BASE_DIR)
 
 # Download dataset for point cloud classification
@@ -85,6 +92,12 @@ def jitter_point_cloud(batch_data, sigma=0.01, clip=0.05):
     return jittered_data
 
 def getDataFiles(list_filename):
+    print("************************************")
+    tmp_var = config.get_value('system', 'RunningInCOLAB')
+    print(f"RUNNING IN COLAB: {tmp_var}")
+    print("************************************")
+    if config.get_value('system', 'RunningInCOLAB') == 'True':
+        return [os.path.join(config.get_value('paths', 'REPO_NAME'), line.rstrip()) for line in open(list_filename)]
     return [line.rstrip() for line in open(list_filename)]
 
 def load_h5(h5_filename):
