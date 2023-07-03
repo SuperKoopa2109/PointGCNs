@@ -174,7 +174,7 @@ if FLAGS.dataset == 'modelnet40':
     BN_DECAY_CLIP = 0.99
 elif FLAGS.dataset == 'shapenet':
     MAX_NUM_POINT = 2048
-    NUM_CLASSES = 50
+    NUM_CLASSES = 4 # Just predict for airplanes right now! #50
 
     BN_INIT_DECAY = 0.5
     BN_DECAY_DECAY_RATE = 0.5
@@ -198,10 +198,44 @@ if FLAGS.dataset == 'modelnet40':
     TEST_FILES = provider.getDataFiles(\
         os.path.join(BASE_DIR, 'data', 'modelnet40_ply_hdf5_2048', 'test_files.txt'))
 elif FLAGS.dataset == 'shapenet':
+
+    # ---- START hyper params ----
+
+    class Config():
+        def __init__(self, kwconf = None, **kwargs):
+            if kwconf is not None:
+                self.conf = {}
+                for key, val in kwconf.items():
+                    setattr(self, key, val)
+                    
+        def __getitem__(self, key):
+            return getattr(self, key)
+
+    config = Config({
+        "model_name": "ShapeNet",
+        "categories": "Airplane",
+        "savedir": "data",
+        "batch_size": 32,
+        "num_workers": 1,
+        "epochs": 2
+    })
+
+    config.batch_size = 32
+    # config.num_workers = 6
+
+    # config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # device = torch.device(config.device)
+
+    config.learning_rate = 1e-4 #@param {type:"number"}
+    # config.epochs = 10
+
+    # ---- END hyper params ----
+
+
     train_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'],
         categories = config['categories'],
-        transform=transforms.Compose([transforms.RadiusGraph(0.01)]),
+        transform=T.Compose([T.RadiusGraph(0.01)]),
             #[transforms.KNNGraph()]),
             #AddEdges()]),
         split = "trainval"
