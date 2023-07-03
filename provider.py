@@ -92,10 +92,6 @@ def jitter_point_cloud(batch_data, sigma=0.01, clip=0.05):
     return jittered_data
 
 def getDataFiles(list_filename):
-    print("************************************")
-    tmp_var = config.get_value('system', 'RunningInCOLAB')
-    print(f"RUNNING IN COLAB: {tmp_var}")
-    print("************************************")
     if config.get_value('system', 'RunningInCOLAB') == 'True':
         return [os.path.join(config.get_value('paths', 'REPO_NAME'), line.rstrip()) for line in open(list_filename)]
     return [line.rstrip() for line in open(list_filename)]
