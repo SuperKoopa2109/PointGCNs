@@ -10,6 +10,10 @@ import importlib
 import os
 import sys
 
+import torch_geometric.transforms as T
+from torch_geometric.datasets import ShapeNet #ModelNet
+from torch_geometric.loader import DataLoader
+
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
 
