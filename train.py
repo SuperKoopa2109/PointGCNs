@@ -85,7 +85,7 @@ RunningInCOLAB = False
 if is_running_in_jupyter():
     print("*** Code is running in an interactive Shell. ***")
 
-    parser = Custom_Parser(colab = True)
+    parser = Custom_Parser()
 
 elif is_running_in_colab():
     print("*** Code is running in Google Colab. ***")
@@ -93,7 +93,7 @@ elif is_running_in_colab():
     RunningInCOLAB = True
     # BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
 
-    parser = Custom_Parser()
+    parser = Custom_Parser(colab = True)
 
 else:
     print("*** Code is running in a Shell. ***")
@@ -132,11 +132,14 @@ if FLAGS.dataset:
     from torch_geometric.datasets import ShapeNet #ModelNet
     from torch_geometric.loader import DataLoader
 
+print("TEST FIRST")
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, 'models'))
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
 
+print("TEST 1")
 import provider
+print("TEST 2")
 import tf_util
 
 # **** END Import Section
