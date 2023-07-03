@@ -127,7 +127,7 @@ config.set_value('system', 'dataset', FLAGS.dataset)
 config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
 config.save()
 
-if FLAGS.dataset:
+if FLAGS.dataset == 'shapenet':
 
     import torch_geometric.transforms as T
     from torch_geometric.datasets import ShapeNet #ModelNet
