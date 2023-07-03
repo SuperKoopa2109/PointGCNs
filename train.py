@@ -115,6 +115,7 @@ else:
     # FLAGS = parser.parse_args()
 
 FLAGS = parser.parse_args()
+print(f'TEST {str(FLAGS.colab)}')
 
 # Check if code is executed in colab environment
 # if FLAGS.colab == 'True':
