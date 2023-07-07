@@ -1,6 +1,6 @@
 import argparse
 import subprocess
-import tensorflow as tf
+# import tensorflow as tf
 import numpy as np
 from datetime import datetime
 import json
@@ -11,6 +11,9 @@ sys.path.append(BASE_DIR)
 sys.path.append(os.path.dirname(BASE_DIR))
 import provider
 import pointnet_part_seg as model
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
 
 # DEFAULT SETTINGS
 parser = argparse.ArgumentParser()
