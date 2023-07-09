@@ -1,4 +1,7 @@
-import tensorflow as tf
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
+
 import numpy as np
 import math
 import os
