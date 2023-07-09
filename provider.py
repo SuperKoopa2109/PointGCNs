@@ -119,11 +119,17 @@ def load_h5_data_label_seg(h5_filename):
 
         BASE_DIR_DATA = param_config.get_value('paths', 'BASE_DIR')
         DATASET = param_config.get_value('system', 'dataset')
-
-        train_dataset = ShapeNet(
-                            root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
-                            categories=category, 
-                            split='trainval')
+        
+        if h5_filename[0] == 'train':
+            train_dataset = ShapeNet(
+                                root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
+                                categories=category, 
+                                split='trainval')
+        elif h5_filename[0] == 'test':
+            train_dataset = ShapeNet(
+                                root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
+                                categories=category, 
+                                split='test')
         
         # in this dataset each iteration over train_dataset will give a batch, which is equal to one pointcloud (here: one airplane)
         data = []

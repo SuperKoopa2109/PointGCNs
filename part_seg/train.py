@@ -211,6 +211,9 @@ def train():
         train_writer = tf.summary.FileWriter(SUMMARIES_FOLDER + '/train', sess.graph)
         test_writer = tf.summary.FileWriter(SUMMARIES_FOLDER + '/test')
 
+        if FLAGS.colab == 'True':
+            TRAINING_FILE_LIST = ['train']
+            TESTING_FILE_LIST = ['test']
         train_file_list = provider.getDataFiles(TRAINING_FILE_LIST)
         num_train_file = len(train_file_list)
         test_file_list = provider.getDataFiles(TESTING_FILE_LIST)
