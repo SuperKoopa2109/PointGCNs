@@ -87,7 +87,7 @@ def get_model(point_cloud, input_label, is_training, cat_num, part_num, \
 
     input_image = tf.expand_dims(point_cloud_transformed, -1)
     out1 = tf_util.conv2d(input_image, 64, [1,K], padding='VALID', stride=[1,1],
-                         bn=True, is_training=is_train+63-ing, scope='conv1', bn_decay=bn_decay)
+                         bn=True, is_training=is_training, scope='conv1', bn_decay=bn_decay)
     out2 = tf_util.conv2d(out1, 128, [1,1], padding='VALID', stride=[1,1],
                          bn=True, is_training=is_training, scope='conv2', bn_decay=bn_decay)
     out3 = tf_util.conv2d(out2, 128, [1,1], padding='VALID', stride=[1,1],
