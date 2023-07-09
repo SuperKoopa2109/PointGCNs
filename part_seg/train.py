@@ -6,9 +6,16 @@ from datetime import datetime
 import json
 import os
 import sys
+
+from param_config import param_config
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.dirname(BASE_DIR))
+
+param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
+param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
+
 import provider
 import pointnet_part_seg as model
 
@@ -19,7 +26,6 @@ import torch_geometric.transforms as T
 from torch_geometric.datasets import ShapeNet #ModelNet
 from torch_geometric.loader import DataLoader
 
-from param_config import param_config
 
 
 # DEFAULT SETTINGS
@@ -34,9 +40,7 @@ parser.add_argument('--dataset', default='modelnet40', help='Dataset to be used 
 parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
 FLAGS = parser.parse_args()
 
-param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
-print(f"*******{param_config.get_value('paths', 'BASE_DIR')}*******")
-param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
+print(f"*******BASE_DIR: {param_config.get_value('paths', 'BASE_DIR')}*******")
 param_config.set_value('system', 'dataset', FLAGS.dataset)
 param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
 param_config.save()
