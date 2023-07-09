@@ -35,6 +35,7 @@ parser.add_argument('--colab', default='False', help='Code is executed in Google
 FLAGS = parser.parse_args()
 
 param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
+print(f'*******param_config.get_value('paths', 'BASE_DIR')*******')
 param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
 param_config.set_value('system', 'dataset', FLAGS.dataset)
 param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
