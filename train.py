@@ -17,7 +17,7 @@ from torch_geometric.loader import DataLoader
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
 
-from config import config
+from param_config import param_config
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -119,32 +119,22 @@ else:
     # FLAGS = parser.parse_args()
 
 FLAGS = parser.parse_args()
-print(f'TEST {str(FLAGS.colab)}')
 
 # Check if code is executed in colab environment
 # if FLAGS.colab == 'True':
     # BASE_DIR = os.path.join(BASE_DIR, 'PointGCNs')
 
-config.set_value('paths', 'BASE_DIR', BASE_DIR)
-config.set_value('paths', 'REPO_NAME', 'PointGCNs')
-config.set_value('system', 'dataset', FLAGS.dataset)
-config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
-config.save()
+param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
+param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
+param_config.set_value('system', 'dataset', FLAGS.dataset)
+param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
+param_config.save()
 
-if FLAGS.dataset == 'shapenet':
-
-    import torch_geometric.transforms as T
-    from torch_geometric.datasets import ShapeNet #ModelNet
-    from torch_geometric.loader import DataLoader
-
-print("TEST FIRST")
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, 'models'))
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
 
-print("TEST 1")
 import provider
-print("TEST 2")
 import tf_util
 
 # **** END Import Section
@@ -434,12 +424,12 @@ def train_one_epoch(sess, ops, train_writer):
             print(batch)
             print(f'---------')
             current_data, current_label = batch['x'].numpy(), batch['y'].numpy() #provider.loadDataFile(TRAIN_FILES[train_file_idxs[fn]])
-            current_data = current_data[:,0:NUM_POINT,:]
+            current_data = current_data[0:NUM_POINT,:]
             current_data, current_label, _ = provider.shuffle_data(current_data, np.squeeze(current_label))            
             current_label = np.squeeze(current_label)
             
-            file_size = current_data.shape[0]
-            num_batches = file_size // BATCH_SIZE
+            # file_size = current_data.shape[0]
+            # num_batches = file_size // BATCH_SIZE
             
             total_correct = 0
             total_seen = 0

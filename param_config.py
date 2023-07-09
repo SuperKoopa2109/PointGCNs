@@ -19,5 +19,31 @@ class Configuration:
         with open(self.file_path, 'w') as config_file:
             self.config.write(config_file)
 
+
+    def is_running_in_jupyter(self):
+        try:
+            # Check if the 'get_ipython' function exists
+            shell = get_ipython().__class__.__name__
+
+            if shell == 'ZMQInteractiveShell':
+                return True  # Jupyter Notebook or JupyterLab
+            else:
+                return False  # Other interactive shell
+        except NameError:
+            return False  # Not in an interactive shell
+
+    def is_running_in_colab(self):
+        try:
+            # Check if the 'get_ipython' function exists
+
+            RunningInCOLAB = 'google.colab' in str(get_ipython())
+
+            if RunningInCOLAB:
+                return True
+            else:
+                return False  # Other interactive shell
+        except NameError:
+            return False  # Not in an interactive shell
+
 # Create a global instance of the Configuration class
-config = Configuration('config.ini')
+param_config = Configuration('config.ini')
