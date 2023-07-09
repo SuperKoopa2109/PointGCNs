@@ -15,6 +15,13 @@ import pointnet_part_seg as model
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
 
+import torch_geometric.transforms as T
+from torch_geometric.datasets import ShapeNet #ModelNet
+from torch_geometric.loader import DataLoader
+
+from param_config import param_config
+
+
 # DEFAULT SETTINGS
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=int, default=1, help='GPU to use [default: GPU 0]')
@@ -23,7 +30,15 @@ parser.add_argument('--epoch', type=int, default=200, help='Epoch to run [defaul
 parser.add_argument('--point_num', type=int, default=2048, help='Point Number [256/512/1024/2048]')
 parser.add_argument('--output_dir', type=str, default='train_results', help='Directory that stores all training logs and trained models')
 parser.add_argument('--wd', type=float, default=0, help='Weight Decay [Default: 0.0]')
+parser.add_argument('--dataset', default='modelnet40', help='Dataset to be used for prediction [default: modelnet40]')
+parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
 FLAGS = parser.parse_args()
+
+param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
+param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
+param_config.set_value('system', 'dataset', FLAGS.dataset)
+param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
+param_config.save()
 
 hdf5_data_dir = os.path.join(BASE_DIR, './hdf5_data')
 
@@ -45,7 +60,7 @@ all_obj_cats = [(line.split()[0], line.split()[1]) for line in lines]
 fin.close()
 
 all_cats = json.load(open(os.path.join(hdf5_data_dir, 'overallid_to_catid_partid.json'), 'r'))
-NUM_CATEGORIES = 16
+NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
 NUM_PART_CATS = len(all_cats)
 
 print('#### Batch Size: {0}'.format(batch_size))

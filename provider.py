@@ -3,10 +3,14 @@ import sys
 import numpy as np
 import h5py
 
-from config import config
+import torch_geometric.transforms as T
+from torch_geometric.datasets import ShapeNet #ModelNet
+from torch_geometric.loader import DataLoader
+
+from param_config import param_config
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = config.get_value('paths', 'BASE_DIR')
+BASE_DIR = param_config.get_value('paths', 'BASE_DIR')
 print(f'*********************************')
 print(f'BASE DIRECTORY: {BASE_DIR}')
 print(f'*********************************')
@@ -17,7 +21,7 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 if not os.path.exists(DATA_DIR):
     os.mkdir(DATA_DIR)
 
-if config.get_value('system', 'dataset') == 'modelnet40': 
+if param_config.get_value('system', 'dataset') == 'modelnet40': 
     if not os.path.exists(os.path.join(DATA_DIR, 'modelnet40_ply_hdf5_2048')):
         www = 'https://shapenet.cs.stanford.edu/media/modelnet40_ply_hdf5_2048.zip'
         zipfile = os.path.basename(www)
@@ -94,8 +98,8 @@ def jitter_point_cloud(batch_data, sigma=0.01, clip=0.05):
     return jittered_data
 
 def getDataFiles(list_filename):
-    if config.get_value('system', 'RunningInCOLAB') == 'True':
-        return [os.path.join(config.get_value('paths', 'REPO_NAME'), line.rstrip()) for line in open(list_filename)]
+    if param_config.get_value('system', 'RunningInCOLAB') == 'True':
+        return [os.path.join(param_config.get_value('paths', 'REPO_NAME'), line.rstrip()) for line in open(list_filename)]
     return [line.rstrip() for line in open(list_filename)]
 
 def load_h5(h5_filename):
@@ -108,10 +112,44 @@ def loadDataFile(filename):
     return load_h5(filename)
 
 def load_h5_data_label_seg(h5_filename):
-    f = h5py.File(h5_filename)
-    data = f['data'][:]
-    label = f['label'][:]
-    seg = f['pid'][:]
+    # Load data for 
+    if param_config.get_value('system', 'RunningInCOLAB') == 'True': 
+        
+        category = "Airplane"
+
+        BASE_DIR_DATA = param_config.get_value('paths', 'BASE_DIR')
+        DATASET = param_config.get_value('system', 'dataset')
+
+        train_dataset = ShapeNet(
+                            root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
+                            categories=category, 
+                            split='trainval')
+        
+        # in this dataset each iteration over train_dataset will give a batch, which is equal to one pointcloud (here: one airplane)
+        data = []
+        label = []
+        seg = []
+        for batch in train_dataset:
+            data_batch, label_batch, seg_batch = (batch['x'], batch['category'], batch['y'])
+            data.append(data_batch)
+            label.append(label_batch)
+            seg.append(seg_batch)
+
+        # BATCH_SIZE = len(train_dataset)
+        # NUM_WORKERS = 1
+
+        # train_loader = DataLoader(
+        #     train_dataset,
+        #     batch_size=BATCH_SIZE,
+        #     shuffle=True,
+        #     num_workers=NUM_WORKERS
+        # )
+    
+    else:
+        f = h5py.File(h5_filename)
+        data = f['data'][:]
+        label = f['label'][:]
+        seg = f['pid'][:]
     return (data, label, seg)
 
 

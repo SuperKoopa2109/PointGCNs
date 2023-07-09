@@ -16,6 +16,8 @@ import provider
 import tf_util
 from model import *
 
+# from param_config import param_config
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
 parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
@@ -29,6 +31,13 @@ parser.add_argument('--decay_step', type=int, default=300000, help='Decay step f
 parser.add_argument('--decay_rate', type=float, default=0.5, help='Decay rate for lr decay [default: 0.5]')
 parser.add_argument('--test_area', type=int, default=6, help='Which area to use for test, option: 1-6 [default: 6]')
 FLAGS = parser.parse_args()
+
+
+# param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
+# param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
+# param_config.set_value('system', 'dataset', FLAGS.dataset)
+# param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
+# param_config.save()
 
 
 BATCH_SIZE = FLAGS.batch_size
