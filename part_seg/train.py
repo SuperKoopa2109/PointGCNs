@@ -7,12 +7,11 @@ import json
 import os
 import sys
 
-from param_config import param_config
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.dirname(BASE_DIR))
 
+from param_config import param_config
 param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
 param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
 
