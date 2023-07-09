@@ -15,15 +15,7 @@ from param_config import param_config
 param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
 param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
 
-import provider
-import pointnet_part_seg as model
 
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
-
-import torch_geometric.transforms as T
-from torch_geometric.datasets import ShapeNet #ModelNet
-from torch_geometric.loader import DataLoader
 
 
 
@@ -43,6 +35,16 @@ print(f"*******BASE_DIR: {param_config.get_value('paths', 'BASE_DIR')}*******")
 param_config.set_value('system', 'dataset', FLAGS.dataset)
 param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
 param_config.save()
+
+import provider
+import pointnet_part_seg as model
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
+
+import torch_geometric.transforms as T
+from torch_geometric.datasets import ShapeNet #ModelNet
+from torch_geometric.loader import DataLoader
 
 hdf5_data_dir = os.path.join(BASE_DIR, 'hdf5_data')
 
