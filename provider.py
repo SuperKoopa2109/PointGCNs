@@ -172,7 +172,7 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
             
             data[i] = data_batch
             label[i] = label_batch
-            seg_batch[i] = seg_batch
+            seg[i] = seg_batch
 
         # TODO: How to handle which FILE TO GET!!! 
         # if h5_filename[0] == 'train':
