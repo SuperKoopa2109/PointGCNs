@@ -30,13 +30,18 @@ if param_config.get_value('system', 'dataset') == 'modelnet40':
         os.system('rm %s' % (zipfile))
 elif param_config.get_value('system', 'dataset') == 'shapenet':
             
+        # BASE_DIR_DATA = param_config.get_value('paths', 'BASE_DIR')
+        DATASET = param_config.get_value('system', 'dataset')
+
+        category = "airplane"
+
         train_dataset = ShapeNet(
-                            root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
+                            root=os.path.join(BASE_DIR, 'data', DATASET), 
                             categories=category, 
                             split='trainval')
         
         test_dataset = ShapeNet(
-                            root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
+                            root=os.path.join(BASE_DIR, 'data', DATASET), 
                             categories=category, 
                             split='test')
 
@@ -129,9 +134,6 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
         global train_dataset
         global test_dataset
         category = "Airplane"
-
-        BASE_DIR_DATA = param_config.get_value('paths', 'BASE_DIR')
-        DATASET = param_config.get_value('system', 'dataset')
         
         data = np.zeros([h5_filename, max_points, 3])
         label = np.zeros([h5_filename])
