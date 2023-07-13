@@ -136,8 +136,8 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
         category = "Airplane"
         
         data = np.zeros([h5_filename, max_points, 3])
-        label = np.zeros([h5_filename])
-        seg = np.zeros([h5_filename, max_points])
+        label = np.zeros([h5_filename], dtype=np.int32)
+        seg = np.zeros([h5_filename, max_points], dtype=np.int32)
 
         # TODO: what if pointcloud has less than max points? -> currently data is disregarded. Might end up in not having same length for batch!!
         small_pointclouds = 0
