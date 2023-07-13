@@ -418,8 +418,11 @@ def train():
 
             printout(flog, '\n>>> Training for the epoch %d/%d ...' % (epoch, TRAINING_EPOCHES))
 
-            train_file_idx = np.arange(0, len(train_file_list))
-            np.random.shuffle(train_file_idx)
+            if param_config.get_value('system', 'dataset') == 'shapenet':
+                train_file_idx = num_train_file
+            else:
+                train_file_idx = np.arange(0, len(train_file_list))
+                np.random.shuffle(train_file_idx)
 
             train_one_epoch(train_file_idx, epoch)
 
