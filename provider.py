@@ -173,9 +173,9 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                         if data_batch.shape[0] > max_points:
                             data_batch = data_batch[:max_points]
                             seg_batch = seg_batch[:max_points]
-                data[i start_idx] = data_batch
-                label[i start_idx] = label_batch
-                seg[i start_idx] = seg_batch
+                data[i - start_idx] = data_batch
+                label[i - start_idx] = label_batch
+                seg[i - start_idx] = seg_batch
             
             
 
