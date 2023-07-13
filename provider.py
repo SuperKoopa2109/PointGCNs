@@ -33,7 +33,7 @@ elif param_config.get_value('system', 'dataset') == 'shapenet':
         # BASE_DIR_DATA = param_config.get_value('paths', 'BASE_DIR')
         DATASET = param_config.get_value('system', 'dataset')
 
-        category = "airplane"
+        category = "Airplane"
 
         train_dataset = ShapeNet(
                             root=os.path.join(BASE_DIR, 'data', DATASET), 
