@@ -142,7 +142,7 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
         # TODO: what if pointcloud has less than max points? -> currently data is disregarded. Might end up in not having same length for batch!!
         small_pointclouds = 0
         
-        for i in range(start_idx, max(start_idx + h5_filename, len(train_dataset))):
+        for i in range(start_idx, max(start_idx + h5_filename, len(train_dataset) - 1 )):
             if is_training:
                 data_batch, label_batch, seg_batch = train_dataset[i]['x'].numpy(), train_dataset[i]['category'].numpy(), train_dataset[i]['y'].numpy()
                 if data_batch.shape[0] > max_points:
