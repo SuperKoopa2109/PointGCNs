@@ -211,16 +211,13 @@ def train():
         train_writer = tf.summary.FileWriter(SUMMARIES_FOLDER + '/train', sess.graph)
         test_writer = tf.summary.FileWriter(SUMMARIES_FOLDER + '/test')
 
-        # if FLAGS.colab == 'True':
-        #     TRAINING_FILE_LIST = ['train']
-        #     TESTING_FILE_LIST = ['test']
 
-        if FLAGS.dataset == 'modelnet40':
+        if param_config.get_value('system', 'dataset') == 'modelnet40': #FLAGS.dataset == 'modelnet40':
             train_file_list = provider.getDataFiles(TRAINING_FILE_LIST)
             num_train_file = len(train_file_list)
             test_file_list = provider.getDataFiles(TESTING_FILE_LIST)
             num_test_file = len(test_file_list)
-        elif FLAGS.dataset == 'shapenet':
+        elif param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
             BATCH_NUM = 1
             num_train_file = BATCH_NUM
             num_test_file = BATCH_NUM
@@ -238,13 +235,14 @@ def train():
 
             # TODO: get file len; think of what should be in one batch/"train_file" and load that from dataset
             for i in range(num_train_file):
-                cur_train_filename = os.path.join(hdf5_data_dir, train_file_list[train_file_idx[i]])
-                printout(flog, 'Loading train file ' + cur_train_filename)
-
-                if FLAGS.dataset == 'shapenet':
-                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(5)
+                
+                if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(512, i * 512)
                 else:
+                    cur_train_filename = os.path.join(hdf5_data_dir, train_file_list[train_file_idx[i]])
+                    printout(flog, 'Loading train file ' + cur_train_filename)
                     cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_train_filename)
+
                 cur_data, cur_labels, order = provider.shuffle_data(cur_data, np.squeeze(cur_labels))
                 cur_seg = cur_seg[order, ...]
 
@@ -332,10 +330,15 @@ def train():
             total_seen_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.int32)
 
             for i in range(num_test_file):
-                cur_test_filename = os.path.join(hdf5_data_dir, test_file_list[i])
-                printout(flog, 'Loading test file ' + cur_test_filename)
 
-                cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_test_filename)
+                if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(512, is_training=False, start_idx = i * 512)
+                else:
+                    cur_test_filename = os.path.join(hdf5_data_dir, test_file_list[i])
+                    printout(flog, 'Loading test file ' + cur_test_filename)
+
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_test_filename)
+
                 cur_labels = np.squeeze(cur_labels)
 
                 cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
