@@ -156,6 +156,9 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                         if data_batch.shape[0] > max_points:
                             data_batch = data_batch[:max_points]
                             seg_batch = seg_batch[:max_points]
+                data[i - start_idx] = data_batch
+                label[i - start_idx] = label_batch
+                seg[i - start_idx] = seg_batch
         else:
             for i in range(start_idx, max(start_idx + h5_filename, len(test_dataset) - 1 )):
                 data_batch, label_batch, seg_batch = test_dataset[i]['x'].numpy(), test_dataset[i]['category'].numpy(), test_dataset[i]['y'].numpy()
@@ -170,10 +173,11 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                         if data_batch.shape[0] > max_points:
                             data_batch = data_batch[:max_points]
                             seg_batch = seg_batch[:max_points]
+                data[i start_idx] = data_batch
+                label[i start_idx] = label_batch
+                seg[i start_idx] = seg_batch
             
-            data[i] = data_batch
-            label[i] = label_batch
-            seg[i] = seg_batch
+            
 
         # TODO: How to handle which FILE TO GET!!! 
         # if h5_filename[0] == 'train':
