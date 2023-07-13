@@ -332,7 +332,7 @@ def train():
             for i in range(num_test_file):
 
                 if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
-                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(512, is_training=False, start_idx = i * 512)
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(256, is_training=False, start_idx = i * 256)
                 else:
                     cur_test_filename = os.path.join(hdf5_data_dir, test_file_list[i])
                     printout(flog, 'Loading test file ' + cur_test_filename)
