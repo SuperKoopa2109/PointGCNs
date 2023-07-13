@@ -28,6 +28,17 @@ if param_config.get_value('system', 'dataset') == 'modelnet40':
         os.system('wget %s --no-check-certificate; unzip %s' % (www, zipfile))
         os.system('mv %s %s' % (zipfile[:-4], DATA_DIR))
         os.system('rm %s' % (zipfile))
+elif param_config.get_value('system', 'dataset') == 'shapenet':
+            
+        train_dataset = ShapeNet(
+                            root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
+                            categories=category, 
+                            split='trainval')
+        
+        test_dataset = ShapeNet(
+                            root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
+                            categories=category, 
+                            split='test')
 
 
 def shuffle_data(data, labels):
@@ -111,35 +122,77 @@ def load_h5(h5_filename):
 def loadDataFile(filename):
     return load_h5(filename)
 
-def load_h5_data_label_seg(h5_filename):
+def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start_idx=0):
+    # h5_filename can also be used as a batch_size for shapenet dataset from pytorch geometric
     # Load data for 
-    if param_config.get_value('system', 'RunningInCOLAB') == 'True': 
-        
+    if param_config.get_value('system', 'dataset') == 'shapenet': 
+        global train_dataset
+        global test_dataset
         category = "Airplane"
 
         BASE_DIR_DATA = param_config.get_value('paths', 'BASE_DIR')
         DATASET = param_config.get_value('system', 'dataset')
         
-        if h5_filename[0] == 'train':
-            train_dataset = ShapeNet(
-                                root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
-                                categories=category, 
-                                split='trainval')
-        elif h5_filename[0] == 'test':
-            train_dataset = ShapeNet(
-                                root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
-                                categories=category, 
-                                split='test')
+        data = np.zeros([h5_filename, max_points, 3])
+        label = np.zeros([h5_filename])
+        seg = np.zeros([h5_filename, max_points])
+
+        # TODO: what if pointcloud has less than max points? -> currently data is disregarded. Might end up in not having same length for batch!!
+        small_pointclouds = 0
+        
+        for i in range(start_idx, max(start_idx + h5_filename, len(train_dataset))):
+            if is_training:
+                data_batch, label_batch, seg_batch = train_dataset[i]['x'].numpy(), train_dataset[i]['category'].numpy(), train_dataset[i]['y'].numpy()
+                if data_batch.shape[0] > max_points:
+                    data_batch = data_batch[:max_points]
+                    seg_batch = seg_batch[:max_points]
+                elif data_batch.shape[0] < max_points:
+                    while data_batch.shape[0] < max_points:
+                        # if pointcloud does not contain enough points, add a random duplicate -> should not be too bad, as there are very few cases like this; also not optimal though TODO
+                        rnd_idx = np.random.randint(h5_filename)
+                        data_batch, label_batch, seg_batch = train_dataset[rnd_idx]['x'].numpy(), train_dataset[rnd_idx]['category'].numpy(), train_dataset[rnd_idx]['y'].numpy()
+                        if data_batch.shape[0] > max_points:
+                            data_batch = data_batch[:max_points]
+                            seg_batch = seg_batch[:max_points]
+            else:
+                data_batch, label_batch, seg_batch = test_dataset[i]['x'].numpy(), test_dataset[i]['category'].numpy(), test_dataset[i]['y'].numpy()
+                if data_batch.shape[0] > max_points:
+                    data_batch = data_batch[:max_points]
+                    seg_batch = seg_batch[:max_points]
+                elif data_batch.shape[0] < max_points:
+                    while data_batch.shape[0] < max_points:
+                        # if pointcloud does not contain enough points, add a random duplicate -> should not be too bad, as there are very few cases like this; also not optimal though TODO
+                        rnd_idx = np.random.randint(h5_filename)
+                        data_batch, label_batch, seg_batch = test_dataset[rnd_idx]['x'].numpy(), test_dataset[rnd_idx]['category'].numpy(), test_dataset[rnd_idx]['y'].numpy()
+                        if data_batch.shape[0] > max_points:
+                            data_batch = data_batch[:max_points]
+                            seg_batch = seg_batch[:max_points]
+            
+            data[i] = data_batch
+            label[i] = label_batch
+            seg_batch[i] = seg_batch
+
+        # TODO: How to handle which FILE TO GET!!! 
+        # if h5_filename[0] == 'train':
+        #     train_dataset = ShapeNet(
+        #                         root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
+        #                         categories=category, 
+        #                         split='trainval')
+        # elif h5_filename[0] == 'test':
+        #     train_dataset = ShapeNet(
+        #                         root=os.path.join(BASE_DIR_DATA, 'data', DATASET), 
+        #                         categories=category, 
+        #                         split='test')
         
         # in this dataset each iteration over train_dataset will give a batch, which is equal to one pointcloud (here: one airplane)
-        data = []
-        label = []
-        seg = []
-        for batch in train_dataset:
-            data_batch, label_batch, seg_batch = (batch['x'], batch['category'], batch['y'])
-            data.append(data_batch)
-            label.append(label_batch)
-            seg.append(seg_batch)
+        # data = []
+        # label = []
+        # seg = []
+        # for batch in train_dataset:
+        #     data_batch, label_batch, seg_batch = (batch['x'], batch['category'], batch['y'])
+        #     data.append(data_batch)
+        #     label.append(label_batch)
+        #     seg.append(seg_batch)
 
         # BATCH_SIZE = len(train_dataset)
         # NUM_WORKERS = 1

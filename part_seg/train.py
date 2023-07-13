@@ -211,13 +211,19 @@ def train():
         train_writer = tf.summary.FileWriter(SUMMARIES_FOLDER + '/train', sess.graph)
         test_writer = tf.summary.FileWriter(SUMMARIES_FOLDER + '/test')
 
-        if FLAGS.colab == 'True':
-            TRAINING_FILE_LIST = ['train']
-            TESTING_FILE_LIST = ['test']
-        train_file_list = provider.getDataFiles(TRAINING_FILE_LIST)
-        num_train_file = len(train_file_list)
-        test_file_list = provider.getDataFiles(TESTING_FILE_LIST)
-        num_test_file = len(test_file_list)
+        # if FLAGS.colab == 'True':
+        #     TRAINING_FILE_LIST = ['train']
+        #     TESTING_FILE_LIST = ['test']
+
+        if FLAGS.dataset == 'modelnet40':
+            train_file_list = provider.getDataFiles(TRAINING_FILE_LIST)
+            num_train_file = len(train_file_list)
+            test_file_list = provider.getDataFiles(TESTING_FILE_LIST)
+            num_test_file = len(test_file_list)
+        elif FLAGS.dataset == 'shapenet':
+            BATCH_NUM = 1
+            num_train_file = BATCH_NUM
+            num_test_file = BATCH_NUM
 
         fcmd = open(os.path.join(LOG_STORAGE_PATH, 'cmd.txt'), 'w')
         fcmd.write(str(FLAGS))
@@ -229,11 +235,16 @@ def train():
         def train_one_epoch(train_file_idx, epoch_num):
             is_training = True
 
+
+            # TODO: get file len; think of what should be in one batch/"train_file" and load that from dataset
             for i in range(num_train_file):
                 cur_train_filename = os.path.join(hdf5_data_dir, train_file_list[train_file_idx[i]])
                 printout(flog, 'Loading train file ' + cur_train_filename)
 
-                cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_train_filename)
+                if FLAGS.dataset == 'shapenet':
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(5)
+                else:
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_train_filename)
                 cur_data, cur_labels, order = provider.shuffle_data(cur_data, np.squeeze(cur_labels))
                 cur_seg = cur_seg[order, ...]
 
