@@ -1,16 +1,23 @@
 import argparse
 import subprocess
-import tensorflow as tf
+# import tensorflow as tf
 import numpy as np
 from datetime import datetime
 import json
 import os
 import sys
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.dirname(BASE_DIR))
-import provider
-import pointnet_part_seg as model
+
+from param_config import param_config
+param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
+param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
+
+
+
+
 
 # DEFAULT SETTINGS
 parser = argparse.ArgumentParser()
@@ -20,9 +27,26 @@ parser.add_argument('--epoch', type=int, default=200, help='Epoch to run [defaul
 parser.add_argument('--point_num', type=int, default=2048, help='Point Number [256/512/1024/2048]')
 parser.add_argument('--output_dir', type=str, default='train_results', help='Directory that stores all training logs and trained models')
 parser.add_argument('--wd', type=float, default=0, help='Weight Decay [Default: 0.0]')
+parser.add_argument('--dataset', default='modelnet40', help='Dataset to be used for prediction [default: modelnet40]')
+parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
 FLAGS = parser.parse_args()
 
-hdf5_data_dir = os.path.join(BASE_DIR, './hdf5_data')
+print(f"*******BASE_DIR: {param_config.get_value('paths', 'BASE_DIR')}*******")
+param_config.set_value('system', 'dataset', FLAGS.dataset)
+param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
+param_config.save()
+
+import provider
+import pointnet_part_seg as model
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
+
+import torch_geometric.transforms as T
+from torch_geometric.datasets import ShapeNet #ModelNet
+from torch_geometric.loader import DataLoader
+
+hdf5_data_dir = os.path.join(BASE_DIR, 'hdf5_data')
 
 # MAIN SCRIPT
 point_num = FLAGS.point_num
@@ -42,7 +66,7 @@ all_obj_cats = [(line.split()[0], line.split()[1]) for line in lines]
 fin.close()
 
 all_cats = json.load(open(os.path.join(hdf5_data_dir, 'overallid_to_catid_partid.json'), 'r'))
-NUM_CATEGORIES = 16
+NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
 NUM_PART_CATS = len(all_cats)
 
 print('#### Batch Size: {0}'.format(batch_size))
@@ -64,8 +88,9 @@ MOMENTUM = 0.9
 TRAINING_EPOCHES = FLAGS.epoch
 print('### Training epoch: {0}'.format(TRAINING_EPOCHES))
 
-TRAINING_FILE_LIST = os.path.join(hdf5_data_dir, 'train_hdf5_file_list.txt')
-TESTING_FILE_LIST = os.path.join(hdf5_data_dir, 'val_hdf5_file_list.txt')
+if not FLAGS.colab:
+    TRAINING_FILE_LIST = os.path.join(hdf5_data_dir, 'train_hdf5_file_list.txt')
+    TESTING_FILE_LIST = os.path.join(hdf5_data_dir, 'val_hdf5_file_list.txt')
 
 MODEL_STORAGE_PATH = os.path.join(output_dir, 'trained_models')
 if not os.path.exists(MODEL_STORAGE_PATH):
@@ -186,10 +211,16 @@ def train():
         train_writer = tf.summary.FileWriter(SUMMARIES_FOLDER + '/train', sess.graph)
         test_writer = tf.summary.FileWriter(SUMMARIES_FOLDER + '/test')
 
-        train_file_list = provider.getDataFiles(TRAINING_FILE_LIST)
-        num_train_file = len(train_file_list)
-        test_file_list = provider.getDataFiles(TESTING_FILE_LIST)
-        num_test_file = len(test_file_list)
+
+        if param_config.get_value('system', 'dataset') == 'modelnet40': #FLAGS.dataset == 'modelnet40':
+            train_file_list = provider.getDataFiles(TRAINING_FILE_LIST)
+            num_train_file = len(train_file_list)
+            test_file_list = provider.getDataFiles(TESTING_FILE_LIST)
+            num_test_file = len(test_file_list)
+        elif param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
+            BATCH_NUM = 1
+            num_train_file = BATCH_NUM
+            num_test_file = BATCH_NUM
 
         fcmd = open(os.path.join(LOG_STORAGE_PATH, 'cmd.txt'), 'w')
         fcmd.write(str(FLAGS))
@@ -201,11 +232,17 @@ def train():
         def train_one_epoch(train_file_idx, epoch_num):
             is_training = True
 
-            for i in range(num_train_file):
-                cur_train_filename = os.path.join(hdf5_data_dir, train_file_list[train_file_idx[i]])
-                printout(flog, 'Loading train file ' + cur_train_filename)
 
-                cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_train_filename)
+            # TODO: get file len; think of what should be in one batch/"train_file" and load that from dataset
+            for i in range(num_train_file):
+                
+                if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(512, i * 512)
+                else:
+                    cur_train_filename = os.path.join(hdf5_data_dir, train_file_list[train_file_idx[i]])
+                    printout(flog, 'Loading train file ' + cur_train_filename)
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_train_filename)
+
                 cur_data, cur_labels, order = provider.shuffle_data(cur_data, np.squeeze(cur_labels))
                 cur_seg = cur_seg[order, ...]
 
@@ -293,10 +330,15 @@ def train():
             total_seen_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.int32)
 
             for i in range(num_test_file):
-                cur_test_filename = os.path.join(hdf5_data_dir, test_file_list[i])
-                printout(flog, 'Loading test file ' + cur_test_filename)
 
-                cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_test_filename)
+                if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(256, is_training=False, start_idx = i * 256)
+                else:
+                    cur_test_filename = os.path.join(hdf5_data_dir, test_file_list[i])
+                    printout(flog, 'Loading test file ' + cur_test_filename)
+
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_test_filename)
+
                 cur_labels = np.squeeze(cur_labels)
 
                 cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
@@ -376,8 +418,11 @@ def train():
 
             printout(flog, '\n>>> Training for the epoch %d/%d ...' % (epoch, TRAINING_EPOCHES))
 
-            train_file_idx = np.arange(0, len(train_file_list))
-            np.random.shuffle(train_file_idx)
+            if param_config.get_value('system', 'dataset') == 'shapenet':
+                train_file_idx = num_train_file
+            else:
+                train_file_idx = np.arange(0, len(train_file_list))
+                np.random.shuffle(train_file_idx)
 
             train_one_epoch(train_file_idx, epoch)
 

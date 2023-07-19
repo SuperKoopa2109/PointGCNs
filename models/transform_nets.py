@@ -3,10 +3,10 @@ import numpy as np
 import sys
 import os
 
-from config import config
+from param_config import param_config
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = config.get_value('paths', 'BASE_DIR')
+BASE_DIR = param_config.get_value('paths', 'BASE_DIR')
 sys.path.append(BASE_DIR)
 # sys.path.append(os.path.join(BASE_DIR, '../utils'))
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
