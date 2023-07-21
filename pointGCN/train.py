@@ -272,7 +272,8 @@ def train():
 
     loss = nn.CrossEntropyLoss()
 
-    train_step(0, model, optimizer, loss, train_loader, device, config)
+    for epoch in config.epochs:
+        train_step(epoch, model, optimizer, loss, train_loader, device, config)
     # load model
 
 
