@@ -300,7 +300,8 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
         epoch_loss += l.item()
         print(f'\n prediction {prediction} \n')
         print(f'prediction.max(1) {prediction.max(1)} \n')
-        print(f"{prediction.max(1).shape}\n")
+        print(f"{prediction.max(1)[1]}\n")
+        print(f"{prediction.max(1)[1].shape}\n")
         correct += prediction.max(1)[1].eq(data['y']).sum().item()
     
     epoch_loss = epoch_loss / num_train_examples
