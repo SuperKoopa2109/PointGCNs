@@ -292,8 +292,8 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
         
         optimizer.zero_grad()
         prediction = model(data)
-        loss(prediction, data['y']) #F.nll_loss(prediction, data.y) # TODO: Cross Entropy loss instead? 
-        loss.backward()
+        l = loss(prediction, data['y']) #F.nll_loss(prediction, data.y) # TODO: Cross Entropy loss instead? 
+        l.backward()
         optimizer.step()
         
         epoch_loss += loss.item()
