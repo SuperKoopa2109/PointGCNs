@@ -1,4 +1,4 @@
-import tensorflow as tf
+# import tensorflow as tf
 import numpy as np
 import math
 import sys
@@ -9,9 +9,12 @@ sys.path.append(os.path.join(BASE_DIR, '../utils'))
 import tf_util
 from transform_nets import input_transform_net, feature_transform_net
 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
+
 def placeholder_inputs(batch_size, num_point):
-    pointclouds_pl = tf.placeholder(tf.float32, shape=(batch_size, num_point, 3))
-    labels_pl = tf.placeholder(tf.int32, shape=(batch_size))
+    pointclouds_pl = tf.placeholder(tf.float32, shape=(batch_size, num_point, 3)) # CHANGED: tf.Variable(tf.ones(shape=(batch_size, num_point, 3)), dtype=tf.float32)
+    labels_pl = tf.placeholder(tf.int32, shape=(batch_size)) # CHANGED: tf.Variable(tf.ones(shape=(batch_size), dtype=tf.int32), dtype=tf.int32)
     return pointclouds_pl, labels_pl
 
 

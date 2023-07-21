@@ -1,34 +1,143 @@
+# **** START Import Section
+
 import argparse
 import math
 import h5py
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
 import socket
 import importlib
 import os
 import sys
 
+import torch_geometric.transforms as T
+from torch_geometric.datasets import ShapeNet #ModelNet
+from torch_geometric.loader import DataLoader
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
+
+from param_config import param_config
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def is_running_in_jupyter():
+    try:
+        # Check if the 'get_ipython' function exists
+        shell = get_ipython().__class__.__name__
+
+        if shell == 'ZMQInteractiveShell':
+            return True  # Jupyter Notebook or JupyterLab
+        else:
+            return False  # Other interactive shell
+    except NameError:
+        return False  # Not in an interactive shell
+
+def is_running_in_colab():
+    try:
+        # Check if the 'get_ipython' function exists
+
+        RunningInCOLAB = 'google.colab' in str(get_ipython())
+
+        if RunningInCOLAB:
+            return True
+        else:
+            return False  # Other interactive shell
+    except NameError:
+        return False  # Not in an interactive shell
+
+class Custom_Parser():
+    gpu = 0
+    model = 'pointnet_cls'
+    log_dir = 'log'
+    num_point = 1024
+    max_epoch = 2
+    batch_size = 32
+    learning_rate = 0.001
+    momentum = 0.9
+    optimizer = 'adam'
+    decay_step = 200000
+    decay_rate = 0.7
+    dataset = 'modelnet40'
+
+    def __init__(self, dataset = 'modelnet40', colab = 'False'):
+        self.colab = colab
+        self.dataset = dataset
+
+    # def parse_args(self):
+    #     return {
+    #         gpu: self.gpu,
+    #         model: self.model,
+    #         log_dir: self.log_dir,
+    #         num_point: self.num_point,
+    #         max_epoch: self.max_epoch,
+    #         batch_size: self.batch_size,
+    #         learning_rate: self.learning_rate,
+    #         momentum: self.momentum,
+    #         optimizer: self.optimizer,
+    #         decay_step: self.decay_step,
+    #         decay_rate: self.decay_rate,
+    #         colab: self.colab
+    #         dataset: self.dataset
+    #     }
+    
+    def parse_args(self):
+        return self
+
+# differentiate between running in an interactive shell vs shell
+RunningInCOLAB = False
+if is_running_in_jupyter():
+    print("*** Code is running in an interactive Shell. ***")
+
+    parser = Custom_Parser()
+
+elif is_running_in_colab():
+    print("*** Code is running in Google Colab. ***")
+
+    RunningInCOLAB = True
+    # BASE_DIR = os.path.join(BASE_DIR, 'pointGCNs')
+
+    parser = Custom_Parser(colab = True)
+
+else:
+    print("*** Code is running in a Shell. ***")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
+    parser.add_argument('--model', default='pointnet_cls', help='Model name: pointnet_cls or pointnet_cls_basic [default: pointnet_cls]')
+    parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
+    parser.add_argument('--num_point', type=int, default=1024, help='Point Number [256/512/1024/2048] [default: 1024]')
+    parser.add_argument('--max_epoch', type=int, default=250, help='Epoch to run [default: 250]')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
+    parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
+    parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
+    parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
+    parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
+    parser.add_argument('--dataset', default='modelnet40', help='Dataset to be used for prediction [default: modelnet40]')
+    parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
+    # FLAGS = parser.parse_args()
+
+FLAGS = parser.parse_args()
+
+# Check if code is executed in colab environment
+# if FLAGS.colab == 'True':
+    # BASE_DIR = os.path.join(BASE_DIR, 'PointGCNs')
+
+param_config.set_value('paths', 'BASE_DIR', BASE_DIR)
+param_config.set_value('paths', 'REPO_NAME', 'PointGCNs')
+param_config.set_value('system', 'dataset', FLAGS.dataset)
+param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
+param_config.save()
+
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, 'models'))
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
+
 import provider
 import tf_util
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
-parser.add_argument('--model', default='pointnet_cls', help='Model name: pointnet_cls or pointnet_cls_basic [default: pointnet_cls]')
-parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
-parser.add_argument('--num_point', type=int, default=1024, help='Point Number [256/512/1024/2048] [default: 1024]')
-parser.add_argument('--max_epoch', type=int, default=250, help='Epoch to run [default: 250]')
-parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
-parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
-parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
-parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
-parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
-parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
-FLAGS = parser.parse_args()
-
+# **** END Import Section
 
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
@@ -45,25 +154,119 @@ MODEL_FILE = os.path.join(BASE_DIR, 'models', FLAGS.model+'.py')
 LOG_DIR = FLAGS.log_dir
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 os.system('cp %s %s' % (MODEL_FILE, LOG_DIR)) # bkp of model def
-os.system('cp train.py %s' % (LOG_DIR)) # bkp of train procedure
+if FLAGS.colab == 'True': #is_running_in_colab():
+    os.system('cp PointGCNs/train.py %s' % (LOG_DIR)) # bkp of train procedure
+else:
+    os.system('cp train.py %s' % (LOG_DIR)) # bkp of train procedure
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
 LOG_FOUT.write(str(FLAGS)+'\n')
 
-MAX_NUM_POINT = 2048
-NUM_CLASSES = 40
+# CHECK FOR DATASET
+if FLAGS.dataset == 'modelnet40':
+    MAX_NUM_POINT = 2048
+    NUM_CLASSES = 40
 
-BN_INIT_DECAY = 0.5
-BN_DECAY_DECAY_RATE = 0.5
-BN_DECAY_DECAY_STEP = float(DECAY_STEP)
-BN_DECAY_CLIP = 0.99
+    BN_INIT_DECAY = 0.5
+    BN_DECAY_DECAY_RATE = 0.5
+    BN_DECAY_DECAY_STEP = float(DECAY_STEP)
+    BN_DECAY_CLIP = 0.99
+elif FLAGS.dataset == 'shapenet':
+    MAX_NUM_POINT = 2048
+    NUM_CLASSES = 4 # Just predict for airplanes right now! #50
+
+    BN_INIT_DECAY = 0.5
+    BN_DECAY_DECAY_RATE = 0.5
+    BN_DECAY_DECAY_STEP = float(DECAY_STEP)
+    BN_DECAY_CLIP = 0.99
+else:
+    MAX_NUM_POINT = 2048
+    NUM_CLASSES = 40
+
+    BN_INIT_DECAY = 0.5
+    BN_DECAY_DECAY_RATE = 0.5
+    BN_DECAY_DECAY_STEP = float(DECAY_STEP)
+    BN_DECAY_CLIP = 0.99
 
 HOSTNAME = socket.gethostname()
 
-# ModelNet40 official train/test split
-TRAIN_FILES = provider.getDataFiles( \
-    os.path.join(BASE_DIR, 'data', 'modelnet40_ply_hdf5_2048', 'train_files.txt'))
-TEST_FILES = provider.getDataFiles(\
-    os.path.join(BASE_DIR, 'data', 'modelnet40_ply_hdf5_2048', 'test_files.txt'))
+if FLAGS.dataset == 'modelnet40':
+    # ModelNet40 official train/test split
+    TRAIN_FILES = provider.getDataFiles( \
+        os.path.join(BASE_DIR, 'data', 'modelnet40_ply_hdf5_2048', 'train_files.txt'))
+    TEST_FILES = provider.getDataFiles(\
+        os.path.join(BASE_DIR, 'data', 'modelnet40_ply_hdf5_2048', 'test_files.txt'))
+elif FLAGS.dataset == 'shapenet':
+
+    # ---- START hyper params ----
+
+    class Config():
+        def __init__(self, kwconf = None, **kwargs):
+            if kwconf is not None:
+                self.conf = {}
+                for key, val in kwconf.items():
+                    setattr(self, key, val)
+                    
+        def __getitem__(self, key):
+            return getattr(self, key)
+
+    config = Config({
+        "model_name": "ShapeNet",
+        "categories": "Airplane",
+        "savedir": "data",
+        "batch_size": 32,
+        "num_workers": 1,
+        "epochs": 2
+    })
+
+    config.batch_size = 32
+    # config.num_workers = 6
+
+    # config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # device = torch.device(config.device)
+
+    config.learning_rate = 1e-4 #@param {type:"number"}
+    # config.epochs = 10
+
+    # ---- END hyper params ----
+
+
+    train_dataset = ShapeNet(
+        root = config['savedir'] + "/" + config['model_name'],
+        categories = config['categories'],
+        transform=T.Compose([T.RadiusGraph(0.01)]),
+            #[transforms.KNNGraph()]),
+            #AddEdges()]),
+        split = "trainval"
+    )
+
+    test_dataset = ShapeNet(
+        root = config['savedir'] + "/" + config['model_name'] + "_test",
+        categories = config['categories'],
+        split = "test"
+    )
+
+    #     train_dataset = ModelNet(
+    #         root=config.modelnet_dataset_alias,
+    #         name=config.modelnet_dataset_alias[-2:],
+    #         train=True,
+    #         transform=transform,
+    #         pre_transform=pre_transform
+    #     )
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=32,
+        shuffle=False
+        # collate_fn=collate_shapenet #torch_geometric.data.Batch.from_data_list #collate_shapenet
+    #     num_workers=config['num_workers']
+    )
+        
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=32,
+        shuffle=True
+    #     num_workers=config['num_workers']
+    )
 
 def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
@@ -95,7 +298,7 @@ def train():
     with tf.Graph().as_default():
         with tf.device('/gpu:'+str(GPU_INDEX)):
             pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
-            is_training_pl = tf.placeholder(tf.bool, shape=())
+            is_training_pl = tf.placeholder(tf.bool, shape=()) # CHANGED: tf.Variable((tf.ones(shape=()) == 1), dtype=tf.bool)
             print(is_training_pl)
             
             # Note the global_step=batch parameter to minimize. 
@@ -173,88 +376,133 @@ def train_one_epoch(sess, ops, train_writer):
     """ ops: dict mapping from string to tf ops """
     is_training = True
     
-    # Shuffle train files
-    train_file_idxs = np.arange(0, len(TRAIN_FILES))
-    np.random.shuffle(train_file_idxs)
-    
-    for fn in range(len(TRAIN_FILES)):
-        log_string('----' + str(fn) + '-----')
-        current_data, current_label = provider.loadDataFile(TRAIN_FILES[train_file_idxs[fn]])
-        current_data = current_data[:,0:NUM_POINT,:]
-        current_data, current_label, _ = provider.shuffle_data(current_data, np.squeeze(current_label))            
-        current_label = np.squeeze(current_label)
+    if FLAGS.dataset == 'modelnet40':
+        # Shuffle train files
+        train_file_idxs = np.arange(0, len(TRAIN_FILES))
+        np.random.shuffle(train_file_idxs)
         
-        file_size = current_data.shape[0]
-        num_batches = file_size // BATCH_SIZE
-        
-        total_correct = 0
-        total_seen = 0
-        loss_sum = 0
-       
-        for batch_idx in range(num_batches):
-            start_idx = batch_idx * BATCH_SIZE
-            end_idx = (batch_idx+1) * BATCH_SIZE
+        for fn in range(len(TRAIN_FILES)):
+            log_string('----' + str(fn) + '-----')
+            current_data, current_label = provider.loadDataFile(TRAIN_FILES[train_file_idxs[fn]])
+            current_data = current_data[:,0:NUM_POINT,:]
+            current_data, current_label, _ = provider.shuffle_data(current_data, np.squeeze(current_label))            
+            current_label = np.squeeze(current_label)
             
-            # Augment batched point clouds by rotation and jittering
-            rotated_data = provider.rotate_point_cloud(current_data[start_idx:end_idx, :, :])
-            jittered_data = provider.jitter_point_cloud(rotated_data)
-            feed_dict = {ops['pointclouds_pl']: jittered_data,
-                         ops['labels_pl']: current_label[start_idx:end_idx],
-                         ops['is_training_pl']: is_training,}
-            summary, step, _, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
-                ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
-            train_writer.add_summary(summary, step)
-            pred_val = np.argmax(pred_val, 1)
-            correct = np.sum(pred_val == current_label[start_idx:end_idx])
-            total_correct += correct
-            total_seen += BATCH_SIZE
-            loss_sum += loss_val
+            file_size = current_data.shape[0]
+            num_batches = file_size // BATCH_SIZE
+            
+            total_correct = 0
+            total_seen = 0
+            loss_sum = 0
         
-        log_string('mean loss: %f' % (loss_sum / float(num_batches)))
-        log_string('accuracy: %f' % (total_correct / float(total_seen)))
+            for batch_idx in range(num_batches):
+                start_idx = batch_idx * BATCH_SIZE
+                end_idx = (batch_idx+1) * BATCH_SIZE
+                
+                # Augment batched point clouds by rotation and jittering
+                rotated_data = provider.rotate_point_cloud(current_data[start_idx:end_idx, :, :])
+                jittered_data = provider.jitter_point_cloud(rotated_data)
+                feed_dict = {ops['pointclouds_pl']: jittered_data,
+                            ops['labels_pl']: current_label[start_idx:end_idx],
+                            ops['is_training_pl']: is_training,}
+                summary, step, _, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
+                    ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
+                train_writer.add_summary(summary, step)
+                pred_val = np.argmax(pred_val, 1)
+                correct = np.sum(pred_val == current_label[start_idx:end_idx])
+                total_correct += correct
+                total_seen += BATCH_SIZE
+                loss_sum += loss_val
+            
+            log_string('mean loss: %f' % (loss_sum / float(num_batches)))
+            log_string('accuracy: %f' % (total_correct / float(total_seen)))
+
+    elif FLAGS.dataset == 'shapenet':
+        
+        for batch in train_loader:
+            print(f'---------')
+            print(batch)
+            print(f'---------')
+            current_data, current_label = batch['x'].numpy(), batch['y'].numpy() #provider.loadDataFile(TRAIN_FILES[train_file_idxs[fn]])
+            current_data = current_data[0:NUM_POINT,:]
+            current_data, current_label, _ = provider.shuffle_data(current_data, np.squeeze(current_label))            
+            current_label = np.squeeze(current_label)
+            
+            # file_size = current_data.shape[0]
+            # num_batches = file_size // BATCH_SIZE
+            
+            total_correct = 0
+            total_seen = 0
+            loss_sum = 0
+        
+            for batch_idx in range(num_batches):
+                start_idx = batch_idx * BATCH_SIZE
+                end_idx = (batch_idx+1) * BATCH_SIZE
+                
+                # Augment batched point clouds by rotation and jittering
+                rotated_data = provider.rotate_point_cloud(current_data[start_idx:end_idx, :, :])
+                jittered_data = provider.jitter_point_cloud(rotated_data)
+                feed_dict = {ops['pointclouds_pl']: jittered_data,
+                            ops['labels_pl']: current_label[start_idx:end_idx],
+                            ops['is_training_pl']: is_training,}
+                summary, step, _, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
+                    ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
+                train_writer.add_summary(summary, step)
+                pred_val = np.argmax(pred_val, 1)
+                correct = np.sum(pred_val == current_label[start_idx:end_idx])
+                total_correct += correct
+                total_seen += BATCH_SIZE
+                loss_sum += loss_val
+            
+            log_string('mean loss: %f' % (loss_sum / float(num_batches)))
+            log_string('accuracy: %f' % (total_correct / float(total_seen)))
 
         
 def eval_one_epoch(sess, ops, test_writer):
     """ ops: dict mapping from string to tf ops """
     is_training = False
-    total_correct = 0
-    total_seen = 0
-    loss_sum = 0
-    total_seen_class = [0 for _ in range(NUM_CLASSES)]
-    total_correct_class = [0 for _ in range(NUM_CLASSES)]
-    
-    for fn in range(len(TEST_FILES)):
-        log_string('----' + str(fn) + '-----')
-        current_data, current_label = provider.loadDataFile(TEST_FILES[fn])
-        current_data = current_data[:,0:NUM_POINT,:]
-        current_label = np.squeeze(current_label)
-        
-        file_size = current_data.shape[0]
-        num_batches = file_size // BATCH_SIZE
-        
-        for batch_idx in range(num_batches):
-            start_idx = batch_idx * BATCH_SIZE
-            end_idx = (batch_idx+1) * BATCH_SIZE
 
-            feed_dict = {ops['pointclouds_pl']: current_data[start_idx:end_idx, :, :],
-                         ops['labels_pl']: current_label[start_idx:end_idx],
-                         ops['is_training_pl']: is_training}
-            summary, step, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
-                ops['loss'], ops['pred']], feed_dict=feed_dict)
-            pred_val = np.argmax(pred_val, 1)
-            correct = np.sum(pred_val == current_label[start_idx:end_idx])
-            total_correct += correct
-            total_seen += BATCH_SIZE
-            loss_sum += (loss_val*BATCH_SIZE)
-            for i in range(start_idx, end_idx):
-                l = current_label[i]
-                total_seen_class[l] += 1
-                total_correct_class[l] += (pred_val[i-start_idx] == l)
+    if FLAGS.dataset == 'modelnet40':
+        total_correct = 0
+        total_seen = 0
+        loss_sum = 0
+        total_seen_class = [0 for _ in range(NUM_CLASSES)]
+        total_correct_class = [0 for _ in range(NUM_CLASSES)]
+        
+        for fn in range(len(TEST_FILES)):
+            log_string('----' + str(fn) + '-----')
+            current_data, current_label = provider.loadDataFile(TEST_FILES[fn])
+            current_data = current_data[:,0:NUM_POINT,:]
+            current_label = np.squeeze(current_label)
             
-    log_string('eval mean loss: %f' % (loss_sum / float(total_seen)))
-    log_string('eval accuracy: %f'% (total_correct / float(total_seen)))
-    log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class,dtype=np.float))))
-         
+            file_size = current_data.shape[0]
+            num_batches = file_size // BATCH_SIZE
+            
+            for batch_idx in range(num_batches):
+                start_idx = batch_idx * BATCH_SIZE
+                end_idx = (batch_idx+1) * BATCH_SIZE
+
+                feed_dict = {ops['pointclouds_pl']: current_data[start_idx:end_idx, :, :],
+                            ops['labels_pl']: current_label[start_idx:end_idx],
+                            ops['is_training_pl']: is_training}
+                summary, step, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
+                    ops['loss'], ops['pred']], feed_dict=feed_dict)
+                pred_val = np.argmax(pred_val, 1)
+                correct = np.sum(pred_val == current_label[start_idx:end_idx])
+                total_correct += correct
+                total_seen += BATCH_SIZE
+                loss_sum += (loss_val*BATCH_SIZE)
+                for i in range(start_idx, end_idx):
+                    l = current_label[i]
+                    total_seen_class[l] += 1
+                    total_correct_class[l] += (pred_val[i-start_idx] == l)
+                
+        log_string('eval mean loss: %f' % (loss_sum / float(total_seen)))
+        log_string('eval accuracy: %f'% (total_correct / float(total_seen)))
+        log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class,dtype=np.float))))
+
+    else:
+        print('dataset is not supported for evaluation yet.')         
 
 
 if __name__ == "__main__":
