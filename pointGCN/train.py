@@ -117,7 +117,7 @@ else:
     # parser.add_argument('--num_point', type=int, default=1024, help='Point Number [256/512/1024/2048] [default: 1024]')
     # parser.add_argument('--max_epoch', type=int, default=250, help='Epoch to run [default: 250]')
     # parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
-    # parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
     # parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
     # parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
     # parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
@@ -164,38 +164,6 @@ else:
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
 LOG_FOUT.write(str(FLAGS)+'\n')
 
-
-# ---- START hyper params ----
-
-class Config():
-    def __init__(self, kwconf = None, **kwargs):
-        if kwconf is not None:
-            self.conf = {}
-            for key, val in kwconf.items():
-                setattr(self, key, val)
-                
-    def __getitem__(self, key):
-        return getattr(self, key)
-
-config = Config({
-    "model_name": "ShapeNet",
-    "categories": "Airplane",
-    "savedir": "data",
-    "batch_size": 32,
-    "num_workers": 1,
-    "epochs": 2
-})
-
-config.batch_size = 32
-# config.num_workers = 6
-
-# config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-# device = torch.device(config.device)
-
-config.learning_rate = 1e-4 #@param {type:"number"}
-# config.epochs = 10
-
-# ---- END hyper params ----
 
 def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
@@ -265,7 +233,8 @@ def train():
         "savedir": "data",
         "batch_size": 32,
         "num_workers": 1,
-        "epochs": 2
+        "epochs": 2,
+        "learning_rate": FLAGS.learning_rate
     })
 
     device = torch.device('cpu')
