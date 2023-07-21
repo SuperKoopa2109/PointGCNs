@@ -270,12 +270,12 @@ def train():
         model.parameters(), lr=config.learning_rate
     )
 
-    train_step(0, model, optimizer, train_loader, device)
+    train_step(0, model, optimizer, train_loader, device, config)
     # load model
 
 
 
-def train_step(epoch, model, optimizer, train_loader, device):
+def train_step(epoch, model, optimizer, train_loader, device, config):
     """Training Step"""
     model.train()
     epoch_loss, correct = 0, 0
