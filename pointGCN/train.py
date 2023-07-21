@@ -233,7 +233,7 @@ def train():
         "savedir": "data",
         "batch_size": 32,
         "num_workers": 1,
-        "epochs": 2,
+        "epochs": 50,
         "learning_rate": FLAGS.learning_rate
     })
 
@@ -300,7 +300,7 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
         correct += prediction.max(1)[1].eq(data['y']).sum().item()
     
     epoch_loss = epoch_loss / num_train_examples
-    epoch_accuracy = correct / len(train_loader.dataset)
+    epoch_accuracy = correct / len(data['x'].shape[0])
     print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
 
 # for epoch in range(config.epochs):
