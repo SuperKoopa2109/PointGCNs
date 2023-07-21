@@ -292,12 +292,12 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
         
         optimizer.zero_grad()
         prediction = model(data)
-        loss(prediction, data['category']) #F.nll_loss(prediction, data.y) # TODO: Cross Entropy loss instead? 
+        loss(prediction, data['y']) #F.nll_loss(prediction, data.y) # TODO: Cross Entropy loss instead? 
         loss.backward()
         optimizer.step()
         
         epoch_loss += loss.item()
-        correct += prediction.max(1)[1].eq(data['category']).sum().item()
+        correct += prediction.max(1)[1].eq(data['y']).sum().item()
     
     epoch_loss = epoch_loss / num_train_examples
     epoch_accuracy = correct / len(train_loader.dataset)
