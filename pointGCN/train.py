@@ -270,12 +270,14 @@ def train():
         model.parameters(), lr=config.learning_rate
     )
 
-    train_step(0, model, optimizer, train_loader, device, config)
+    loss = nn.CrossEntropyLoss()
+
+    train_step(0, model, optimizer, loss, train_loader, device, config)
     # load model
 
 
 
-def train_step(epoch, model, optimizer, train_loader, device, config):
+def train_step(epoch, model, optimizer, loss, train_loader, device, config):
     """Training Step"""
     model.train()
     epoch_loss, correct = 0, 0
@@ -290,7 +292,7 @@ def train_step(epoch, model, optimizer, train_loader, device, config):
         
         optimizer.zero_grad()
         prediction = model(data)
-        loss = nn.CrossEntropyLoss() #F.nll_loss(prediction, data.y) # TODO: Cross Entropy loss instead? 
+        loss(prediction, data['category']) #F.nll_loss(prediction, data.y) # TODO: Cross Entropy loss instead? 
         loss.backward()
         optimizer.step()
         
