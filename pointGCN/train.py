@@ -289,7 +289,7 @@ def train_step(epoch, model, optimizer, train_loader, device, config):
         data = next(iter(train_loader)).to(device)
         
         optimizer.zero_grad()
-        prediction = model(data['x'], data['edge_index'])
+        prediction = model(data)
         loss = nn.CrossEntropyLoss() #F.nll_loss(prediction, data.y) # TODO: Cross Entropy loss instead? 
         loss.backward()
         optimizer.step()

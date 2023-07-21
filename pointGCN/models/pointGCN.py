@@ -107,4 +107,4 @@ class SAGE_model(nn.Module):
 #         x_embed = self.node_embeder(data['pos'], data['edge_index'])
         
         
-        return self.node_embedder(data['pos'], data['edge_index']) #self.mlp( self.aggr_1(x_embed, data['batch']) )
+        return self.node_embedder(data['x'], data['edge_index']) #self.mlp( self.aggr_1(x_embed, data['batch']) )
