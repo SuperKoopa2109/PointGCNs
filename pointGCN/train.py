@@ -8,6 +8,8 @@ import importlib
 import os
 import sys
 
+# append parent directory to system paths
+
 import torch
 from torch import nn
 
@@ -17,11 +19,15 @@ from torch_geometric.loader import DataLoader
 
 from tqdm import tqdm
 
-from ....param_config import param_config
 
 from models.pointGCN import SAGE_model
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CUR_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(CUR_DIR)
+
+sys.path.append(BASE_DIR)
+
+from param_config import param_config
 
 def is_running_in_jupyter():
     try:
@@ -320,14 +326,14 @@ def train_step(epoch, model, optimizer, train_loader, device):
         optimizer.step()
         
         epoch_loss += loss.item()
-        correct += prediction.max(1)[1].eq(data['y']).sum().item()
+        correct += prediction.max(1)[1].eq(data['category']).sum().item()
     
     epoch_loss = epoch_loss / num_train_examples
     epoch_accuracy = correct / len(train_loader.dataset)
     print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
 
-for epoch in range(config.epochs):
-    train_step(epoch)
+# for epoch in range(config.epochs):
+#     train_step(epoch)
     
 #     wandb.log({
 #         "Train/Loss": epoch_loss,
