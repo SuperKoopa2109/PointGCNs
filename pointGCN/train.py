@@ -281,7 +281,7 @@ def train():
 def train_step(epoch, model, optimizer, loss, train_loader, device, config):
     """Training Step"""
     model.train()
-    epoch_loss, correct = 0, 0
+    epoch_loss, correct, total_predictions = 0, 0, 0
     num_train_examples = len(train_loader)
     
     progress_bar = tqdm(
@@ -298,16 +298,11 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
         optimizer.step()
         
         epoch_loss += l.item()
-        print(f'\n prediction {prediction} \n')
-        print(f'prediction.max(1) {prediction.max(1)} \n')
-        print(f"{prediction.max(1)[1]}\n")
-        print(f"{prediction.max(1)[1].shape}\n")
         correct += prediction.max(1)[1].eq(data['y']).sum().item()
+        total_predictions += data['x'].shape[0]
     
     epoch_loss = epoch_loss / num_train_examples
-    print(f'correct {correct}')
-    print(f"data['x'].shape[0] {data['x'].shape[0]}")
-    epoch_accuracy = correct / data['x'].shape[0]
+    epoch_accuracy = correct / total_predictions
     print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
 
 # for epoch in range(config.epochs):
