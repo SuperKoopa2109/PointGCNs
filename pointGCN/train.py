@@ -19,6 +19,8 @@ from torch_geometric.loader import DataLoader
 
 from tqdm import tqdm
 
+import optuna
+
 
 from models.pointGCN import SAGE_model
 
@@ -174,6 +176,10 @@ def load_data(config):
 
     # TODO: add edge features to graph -> Distances ? Degree ? Nearest Neighbourhood -> argsort of distnaces and one-hot-encoded?
     
+    # pre_transform = T.NormalizeScale()
+    # TODO: Maybe use this tranform step?
+    # transform = T.SamplePoints(config.sample_points)
+
     train_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'],
         categories = config['categories'],
@@ -181,10 +187,8 @@ def load_data(config):
                                       T.Distance(),
                                       T.OneHotDegree(50) 
                                       ]), #T.OneHotDegree(50) just crashes if number too low  ## TODO: Check for highest degree on training data and use that
-        split = "trainval"
+        split = "train"
     )
-    
-
     
     train_loader = DataLoader(
         train_dataset,
@@ -192,6 +196,25 @@ def load_data(config):
         shuffle=True,
         num_workers=config['num_workers']
     )
+
+
+    val_dataset = ShapeNet(
+            root = config['savedir'] + "/" + config['model_name'],
+            categories = config['categories'],
+            transform=T.Compose([T.RadiusGraph(0.01),
+                                        T.Distance(),
+                                        T.OneHotDegree(50) 
+                                        ]),
+            split = "val"
+        )
+    
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=config['batch_size'],
+        shuffle=True,
+        num_workers=config['num_workers']
+    )
+
 
     test_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'] + "_test",
@@ -210,7 +233,7 @@ def load_data(config):
     #     num_workers=config['num_workers']
     )
 
-    return train_dataset, train_loader, test_dataset, test_loader
+    return train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader
 
 def load_model(modelname = 'SageNet', input_dim=1, hidden_dim=2, embed_dim=3, class_num=6):
     return SAGE_model(input_dim=1, hidden_dim=2, embed_dim=3, class_num=6)
@@ -239,30 +262,29 @@ def train():
 
     device = torch.device('cpu')
     
-    train_dataset, train_loader, test_dataset, test_loader = load_data(config)
+    train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader = load_data(config)
 
-    graph_model = load_model()
 
     # Define PointNet++ model.
 
     sample = next(iter(train_loader)) #train_loader.dataset[0] #['y']
 
+    study = optuna.create_study()
 
-    model = SAGE_model(
-        sample['x'].shape[1], 
-        128, 
-        256, 
+    model = load_model(
+        modelname = 'SageNet', 
+        input_dim = sample['x'].shape[1], 
+        hidden_dim=64, 
+        embed_dim=128, 
         class_num=int(sample['y'].max() + 1)).to(device)
 
-    # TODO: use .unique instead ?? 
+    # model = SAGE_model(
+         
+    #     128, 
+    #     256, 
+    #     class_num=int(sample['y'].max() + 1)).to(device)
 
-    # PointNet2(
-    #     config.set_abstraction_ratio_1,
-    #     config.set_abstraction_ratio_2,
-    #     config.set_abstraction_radius_1,
-    #     config.set_abstraction_radius_2,
-    #     config.dropout
-    # ).to(device)
+    # TODO: use .unique instead ?? 
 
 
     # Define Optimizer
@@ -274,6 +296,7 @@ def train():
 
     for epoch in range(config.epochs):
         train_step(epoch, model, optimizer, loss, train_loader, device, config)
+        # val_step(epoch, model, loss, val_loader, device, config)
     # load model
 
 
@@ -314,34 +337,39 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
 #     })
 
 
-# def val_step(epoch):
-#     """Validation Step"""
-#     model.eval()
-#     epoch_loss, correct = 0, 0
-#     num_val_examples = len(val_loader)
+def val_step(epoch, model, loss, val_loader, device, config):
+    """Validation Step"""
+    model.eval()
+    epoch_loss, correct = 0, 0
+    num_val_examples = len(val_loader)
     
-#     progress_bar = tqdm(
-#         range(num_val_examples),
-#         desc=f"Validation Epoch {epoch}/{config.epochs}"
-#     )
-#     for batch_idx in progress_bar:
-#         data = next(iter(val_loader)).to(device)
+    progress_bar = tqdm(
+        range(num_val_examples),
+        desc=f"Validation Epoch {epoch}/{config.epochs}"
+    )
+    for batch_idx in progress_bar:
+        data = next(iter(val_loader)).to(device)
         
-#         with torch.no_grad():
-#             prediction = model(data)
+        with torch.no_grad():
+            prediction = model(data)
         
-#         loss = F.nll_loss(prediction, data.y)
-#         epoch_loss += loss.item()
-#         correct += prediction.max(1)[1].eq(data.y).sum().item()
+        l = loss(prediction, data.y)
+        epoch_loss += l.item()
+        correct += prediction.max(1)[1].eq(data.y).sum().item()
     
-#     epoch_loss = epoch_loss / num_val_examples
-#     epoch_accuracy = correct / len(val_loader.dataset)
+    epoch_loss = epoch_loss / num_val_examples
+    epoch_accuracy = correct / len(val_loader.dataset)
     
-#     wandb.log({
-#         "Validation/Loss": epoch_loss,
-#         "Validation/Accuracy": epoch_accuracy
-#     })
+    log = {
+        "Validation/Loss": epoch_loss,
+        "Validation/Accuracy": epoch_accuracy
+    }
+    # wandb.log({
+    #     "Validation/Loss": epoch_loss,
+    #     "Validation/Accuracy": epoch_accuracy
+    # })
 
+    return log
 
 # def visualize_evaluation(table, epoch):
 #     """Visualize validation result in a Weights & Biases Table"""

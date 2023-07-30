@@ -26,23 +26,50 @@ class generic_class():
         return self.sth
 
 class generic_model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, embed_dim, class_num=6):
+    def __init__(self, input_dim, hidden_dim, embed_dim, class_num=6, norm='None'):
         super().__init__()
         
         self.input_dim = input_dim
         self.embed_dim = embed_dim
         self.hidden_dim = hidden_dim
         self.class_num = class_num
-        
-        self.node_embeder = nn.Sequential(
-            [
-                nn.Linear(input_dim, hidden_dim),
-                nn.ReLU(inplace = True), # leaky ReLU instead?? 
-                nn.Linear(hidden_dim, embed_dim),
-                nn.ReLU(inplace = True),
-                nn.Linear(embed_dim, class_num)
-            ]
-        )
+
+        if norm == 'Batch':
+            self.node_embeder = nn.Sequential(
+                [
+                    nn.Linear(input_dim, hidden_dim),
+                    nn.BatchNorm2d(hidden_dim, eps=1e-05, momentum=0.1), #, affine=True, track_running_stats=True, device=None, dtype=None)
+                    nn.ReLU(inplace = True), # leaky ReLU instead?? 
+                    nn.Linear(hidden_dim, embed_dim),
+                    nn.BatchNorm2d(embed_dim, eps=1e-05, momentum=0.1), #, affine=True, track_running_stats=True, device=None, dtype=None)
+                    nn.ReLU(inplace = True),
+                    nn.Linear(embed_dim, class_num)
+                ]
+            )
+
+        elif norm == 'Instance':
+            self.node_embeder = nn.Sequential(
+                [
+                    nn.Linear(input_dim, hidden_dim),
+                    nn.InstanceNorm2d(hidden_dim, eps=1e-05, momentum=0.1), #, affine=False, track_running_stats=False, device=None, dtype=None)
+                    nn.ReLU(inplace = True), # leaky ReLU instead?? 
+                    nn.Linear(hidden_dim, embed_dim),
+                    nn.InstanceNorm2d(embed_dim, eps=1e-05, momentum=0.1), #, affine=False, track_running_stats=False, device=None, dtype=None)
+                    nn.ReLU(inplace = True),
+                    nn.Linear(embed_dim, class_num)
+                ]
+            )
+
+        else:
+            self.node_embeder = nn.Sequential(
+                [
+                    nn.Linear(input_dim, hidden_dim),
+                    nn.ReLU(inplace = True), # leaky ReLU instead?? 
+                    nn.Linear(hidden_dim, embed_dim),
+                    nn.ReLU(inplace = True),
+                    nn.Linear(embed_dim, class_num)
+                ]
+            )
     
     def forward(self, data):
         
@@ -50,7 +77,7 @@ class generic_model(nn.Module):
 
 
 class SAGE_model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, embed_dim, class_num=6):
+    def __init__(self, input_dim, hidden_dim, embed_dim, no_of_layers=4, class_num=4, norm='None'):
         super().__init__()
         
         self.input_dim = input_dim
@@ -73,18 +100,85 @@ class SAGE_model(nn.Module):
 
 # TODO: Evaluation step: maybe use better metrics than accuracy
         
-        self.node_embedder = gnn.Sequential(
-            'x, edge_index',
-            [
-                (gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'),
-                nn.ReLU(inplace = True), # leaky ReLU instead?? 
-                (gnn.SAGEConv(hidden_dim, embed_dim), 'x, edge_index -> x'),
-                nn.ReLU(inplace = True),
-                nn.Linear(embed_dim, class_num)
-                #nn.ReLU(inplace = True)
-            ]
-        )
+
+        #Alternatively do this differently.. Apply layer for layer? 
+
+        modules = []
+
+        for layer_idx in range(no_of_layers):
+
+            layer_dim = layer_idx * hidden_dim
+
+            modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=layer_dim, norm=norm))
+
+        modules.append(nn.Linear(embed_dim, class_num))
+        modules.append(nn.ReLU(inplace = True))
+
+            # modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+
+            # if norm == 'Batch':
+            #     modules.append(gnn.BatchNorm(in_channels=hidden_dim, eps=1e-05, momentum=0.1))
+            # elif norm == 'Instance':    
+            #     modules.append(gnn.InstanceNorm(in_channels=hidden_dim, eps=1e-05, momentum=0.1))
+            
+            # modules.append(nn.ReLU(inplace=True))
+
+            # gnn.Sequential('x, edge_index',
+            #                modules)
+
+
+        # if norm == 'Batch':
+        #     self.node_embedder = gnn.Sequential(
+        #         'x, edge_index',
+        #         [
+        #             (gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'),
+        #             gnn.BatchNorm(in_channels=hidden_dim, eps=1e-05, momentum=0.1), #, affine: bool = True, track_running_stats: bool = True, allow_single_element: bool = False)),
+        #             #nn.BatchNorm2d(hidden_dim, eps=1e-05, momentum=0.1), #, affine=True, track_running_stats=True, device=None, dtype=None)
+        #             nn.ReLU(inplace = True), # leaky ReLU instead?? 
+        #             (gnn.SAGEConv(hidden_dim, embed_dim), 'x, edge_index -> x'),
+        #             gnn.BatchNorm(in_channels=embed_dim, eps=1e-05, momentum=0.1), #, affine: bool = True, track_running_stats: bool = True, allow_single_element: bool = False)),
+        #             #nn.BatchNorm2d(embed_dim, eps=1e-05, momentum=0.1), #, affine=True, track_running_stats=True, device=None, dtype=None)
+        #             nn.ReLU(inplace = True),
+        #             nn.Linear(embed_dim, class_num)
+        #             #nn.ReLU(inplace = True)
+        #         ]
+        #     )
+
+        # elif norm == 'Instance':
+        #     self.node_embedder = gnn.Sequential(
+        #         'x, edge_index',
+        #         [
+        #             (gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'),
+        #             gnn.InstanceNorm(in_channels=hidden_dim, eps=1e-05, momentum=0.1), #, affine: bool = False, track_running_stats: bool = False)
+        #             #nn.InstanceNorm2d(hidden_dim, eps=1e-05, momentum=0.1), #, affine=False, track_running_stats=False, device=None, dtype=None)
+        #             nn.ReLU(inplace = True), # leaky ReLU instead?? 
+        #             (gnn.SAGEConv(hidden_dim, embed_dim), 'x, edge_index -> x'),
+        #             gnn.InstanceNorm(in_channels=embed_dim, eps=1e-05, momentum=0.1), #, affine: bool = False, track_running_stats: bool = False)
+        #             #nn.InstanceNorm2d(hidden_dim, eps=1e-05, momentum=0.1), #, affine=False, track_running_stats=False, device=None, dtype=None)
+        #             nn.ReLU(inplace = True),
+        #             nn.Linear(embed_dim, class_num)
+        #             #nn.ReLU(inplace = True)
+        #         ]
+        #     )
+
+        # else:
+        #     self.node_embedder = gnn.Sequential(
+        #         'x, edge_index',
+        #         [
+        #             (gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'),
+        #             nn.ReLU(inplace = True), # leaky ReLU instead?? 
+        #             (gnn.SAGEConv(hidden_dim, embed_dim), 'x, edge_index -> x'),
+        #             nn.ReLU(inplace = True),
+        #             nn.Linear(embed_dim, class_num)
+        #             #nn.ReLU(inplace = True)
+        #         ]
+        #     )
         
+        
+
+
+        # *************************
+
         # self.aggr_1 = gnn.aggr.MeanAggregation()
         # self.mlp = nn.Sequential(
         #     nn.Linear(embed_dim, class_num),
@@ -101,6 +195,23 @@ class SAGE_model(nn.Module):
 
 #             ]
 #         )
+
+    def get_hidden_layer(self, input_dim=16, hidden_dim=64, norm='Batch'):
+        modules = []
+
+        modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+
+        if norm == 'Batch':
+            modules.append(gnn.BatchNorm(in_channels=hidden_dim, eps=1e-05, momentum=0.1))
+        elif norm == 'Instance':    
+            modules.append(gnn.InstanceNorm(in_channels=hidden_dim, eps=1e-05, momentum=0.1))
+
+        modules.append(nn.ReLU(inplace=True))
+
+        return modules
+    # gnn.Sequential('x, edge_index',
+    #                    modules)
+
     
     def forward(self, data):
         
