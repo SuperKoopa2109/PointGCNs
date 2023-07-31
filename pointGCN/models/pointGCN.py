@@ -110,14 +110,14 @@ class SAGE_model(nn.Module):
         modules.append(nn.ReLU(inplace=True))
         #modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=hidden_dim, norm=norm))
 
-        for layer_idx in range(1, no_of_layers + 1):
+        for layer_idx in range(1, no_of_layers):
             
             input_dim_layer = layer_idx * hidden_dim
             layer_dim = (layer_idx + 1) * hidden_dim
 
             modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=layer_dim, norm=norm))
 
-        modules.append(nn.Linear(no_of_layers * hidden_dim, class_num))
+        modules.append(nn.Linear(input_dim, class_num))#(no_of_layers * hidden_dim, class_num))
         modules.append(nn.Sigmoid())
 
         self.node_embedder = gnn.Sequential(
