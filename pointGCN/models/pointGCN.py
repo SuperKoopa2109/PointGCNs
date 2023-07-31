@@ -77,7 +77,7 @@ class generic_model(nn.Module):
 
 
 class SAGE_model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, embed_dim, no_of_layers=4, class_num=4, norm='None'):
+    def __init__(self, input_dim, embed_dim, hidden_dim, no_of_layers=4, class_num=4, norm='None'):
         super().__init__()
         
         self.input_dim = input_dim
@@ -105,14 +105,20 @@ class SAGE_model(nn.Module):
 
         modules = []
 
-        for layer_idx in range(no_of_layers):
+        # embed data
+        modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+        modules.append(nn.ReLU(inplace=True))
+        #modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=hidden_dim, norm=norm))
 
-            layer_dim = layer_idx * hidden_dim
+        for layer_idx in range(1, no_of_layers + 1):
+            
+            input_dim_layer = layer_idx * hidden_dim
+            layer_dim = (layer_idx + 1) * hidden_dim
 
             modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=layer_dim, norm=norm))
 
-        modules.append(nn.Linear(embed_dim, class_num))
-        modules.append(nn.ReLU(inplace = True))
+        modules.append(nn.Linear(no_of_layers * no_of_layers, class_num))
+        modules.append(nn.Sigmoid(inplace = True))
 
         self.node_embedder = gnn.Sequential(
                 'x, edge_index',
