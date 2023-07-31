@@ -277,6 +277,7 @@ def train():
         hidden_dim=64, 
         embed_dim=128, 
         class_num=int(sample['y'].max() + 1)).to(device)
+    print(model)
 
     # model = SAGE_model(
          

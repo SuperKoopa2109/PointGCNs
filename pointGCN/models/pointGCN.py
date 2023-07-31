@@ -114,6 +114,11 @@ class SAGE_model(nn.Module):
         modules.append(nn.Linear(embed_dim, class_num))
         modules.append(nn.ReLU(inplace = True))
 
+        self.node_embedder(gnn.Sequential(
+                'x, edge_index',
+                modules
+                )
+            )
             # modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
 
             # if norm == 'Batch':
