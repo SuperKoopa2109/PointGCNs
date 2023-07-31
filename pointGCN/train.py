@@ -236,7 +236,7 @@ def load_data(config):
     return train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader
 
 def load_model(modelname = 'SageNet', input_dim=1, hidden_dim=2, embed_dim=3, class_num=6):
-    return SAGE_model(input_dim=1, hidden_dim=2, embed_dim=3, class_num=6)
+    return SAGE_model(input_dim=input_dim, hidden_dim=hidden_dim, embed_dim=embed_dim, class_num=class_num)
 
 def train():
 
