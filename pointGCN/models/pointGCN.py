@@ -117,7 +117,7 @@ class SAGE_model(nn.Module):
 
             modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=layer_dim, norm=norm))
 
-        modules.append(nn.Linear(no_of_layers * no_of_layers, class_num))
+        modules.append(nn.Linear(no_of_layers * hidden_dim, class_num))
         modules.append(nn.Sigmoid())
 
         self.node_embedder = gnn.Sequential(
