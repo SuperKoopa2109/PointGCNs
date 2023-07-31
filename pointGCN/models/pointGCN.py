@@ -115,7 +115,7 @@ class SAGE_model(nn.Module):
             input_dim_layer = layer_idx * hidden_dim
             layer_dim = (layer_idx + 1) * hidden_dim
 
-            modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=layer_dim, norm=norm))
+            modules.extend(self.get_hidden_layer(input_dim=input_dim_layer, hidden_dim=layer_dim, norm=norm))
 
         modules.append(nn.Linear(input_dim, class_num))#(no_of_layers * hidden_dim, class_num))
         modules.append(nn.Sigmoid())
