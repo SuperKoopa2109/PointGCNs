@@ -7,6 +7,7 @@ from torch import nn
 from torch_geometric import nn as gnn
 import torch_geometric.transforms as T
 from torch.nn import functional as F
+from torch_geometric.utils import dropout_node
 
 from torch_geometric.datasets import ShapeNet
 from torch_geometric.loader import DataLoader
@@ -77,13 +78,38 @@ class generic_model(nn.Module):
 
 
 class SAGE_model(nn.Module):
-    def __init__(self, input_dim, embed_dim, hidden_dim, no_of_layers=4, class_num=4, norm='None'):
+    def __init__(self, 
+                 input_dim, 
+                 embed_dim, 
+                 hidden_dim,
+                 conv_type = 'SAGEConv', 
+                 no_of_layers = 4, 
+                 class_num = 4, 
+                 drop_rate = 0.,
+                 negative_slope = 0., 
+                 norm = 'None'):
+        """
+            Model to predict node classification providing configuration of convolutional layer type
+            
+            input_dim: dimension of input [int]
+            embed_dim: dimension of embedding [int]
+            hidden_dim: dimension of first hidden layer -> scaled by amount of hidden layers for following hidden layers [int]
+            conv_type: type of convolutional layer ['SAGEConv', 'GAT', 'GCN']
+            no_of_layers: number of hidden layers (residual layers) [int]
+            class_num: number of classes predicted for output linear layer [int]
+            drop_rate: rate for dropout; set to 0. for not using dropout at all [float]
+            negative_slope: rate for negative slope in leaky ReLU activation functions [float]
+            norm: type of normalization used; set to 'None' or leave default for not using normalization at all ['None', 'Batch', 'Instance', 'Layer']
+            
+        """
         super().__init__()
         
         self.input_dim = input_dim
         self.embed_dim = embed_dim
         self.hidden_dim = hidden_dim
         self.class_num = class_num
+        self.drop_rate = drop_rate
+        self.negative_slope = negative_slope
         
 # TODO: *** ACTIVATION FUNCTIONS
 # TODO: for first activation function maybe only leaky ReLU makes sense
@@ -106,18 +132,33 @@ class SAGE_model(nn.Module):
         modules = []
 
         # embed data
-        modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+        if conv_type == 'SAGEConv':
+            modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+        else: 
+            modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+
         modules.append(nn.ReLU(inplace=True))
+
+        modules.append((nn.Dropout(p = drop_rate), 'x -> x'))
         #modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=hidden_dim, norm=norm))
 
+        # TODO: Do Upsampling and Downsampling again?? 
         for layer_idx in range(1, no_of_layers):
             
             input_dim_layer = layer_idx * hidden_dim
             layer_dim = (layer_idx + 1) * hidden_dim
 
-            modules.extend(self.get_hidden_layer(input_dim=input_dim_layer, hidden_dim=layer_dim, norm=norm))
+            modules.extend(self.get_hidden_layer(
+                        input_dim = input_dim_layer, 
+                        hidden_dim = layer_dim, 
+                        norm = self.norm, 
+                        drop_rate = self.drop_rate,
+                        negative_slope = self.negative_slope
+                        )
+                    )
 
         modules.append(nn.Linear(no_of_layers * hidden_dim, class_num))
+        modules.append(nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True))
         modules.append(nn.Sigmoid())
 
         self.node_embedder = gnn.Sequential(
@@ -207,17 +248,38 @@ class SAGE_model(nn.Module):
 #             ]
 #         )
 
-    def get_hidden_layer(self, input_dim=16, hidden_dim=64, norm='Batch'):
+    def get_hidden_layer(
+            self, 
+            input_dim = 16, 
+            hidden_dim = 64, 
+            conv_type = 'SAGEConv', 
+            norm = 'Batch',
+            drop_rate = 0.,
+            negative_slope = 0.,):
         modules = []
 
         modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
 
+        # Normalization before after convolution, but before activation
+        # as it has been done in resnet as well (\cite He et al., Deep Residual Learning for Image Recognition)
+
         if norm == 'Batch':
+
+            # most important assumption: samples should be i.i.d. -> basically never the case
+            # However it still works
+            # Use normalization to reduce covariance shift
+            # layer normalization -> standardize each feature
+            # layer norm is weaker -> but does the trick for covariance shift
+
             modules.append(gnn.BatchNorm(in_channels=hidden_dim, eps=1e-05, momentum=0.1))
         elif norm == 'Instance':    
             modules.append(gnn.InstanceNorm(in_channels=hidden_dim, eps=1e-05, momentum=0.1))
 
         modules.append(nn.ReLU(inplace=True))
+
+        # Dropout
+        modules.append((nn.Dropout(p=drop_rate), 'x -> x'))
+        # modules.append(dropout_node())
 
         return modules
     # gnn.Sequential('x, edge_index',
