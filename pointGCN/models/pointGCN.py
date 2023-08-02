@@ -107,9 +107,12 @@ class SAGE_model(nn.Module):
         self.input_dim = input_dim
         self.embed_dim = embed_dim
         self.hidden_dim = hidden_dim
+        self.conv_type = conv_type
+        self.no_of_layers = no_of_layers
         self.class_num = class_num
         self.drop_rate = drop_rate
         self.negative_slope = negative_slope
+        self.norm = norm
         
 # TODO: *** ACTIVATION FUNCTIONS
 # TODO: for first activation function maybe only leaky ReLU makes sense
