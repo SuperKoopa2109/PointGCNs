@@ -19,10 +19,15 @@ from torch_geometric.loader import DataLoader
 
 from tqdm import tqdm
 
+# For hyper parameter optimization
 import optuna
+
+# For logging
+import wandb
 
 
 from models.pointGCN import SAGE_model
+
 
 CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(CUR_DIR)
@@ -55,6 +60,9 @@ def is_running_in_colab():
             return False  # Other interactive shell
     except NameError:
         return False  # Not in an interactive shell
+
+def is_imported(modulename):
+    return modulename in sys.modules
 
 class Custom_Parser():
     gpu = 0
@@ -183,10 +191,12 @@ def load_data(config):
     train_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'],
         categories = config['categories'],
-        transform=T.Compose([T.RadiusGraph(0.01),
-                                      T.Distance(),
-                                      T.OneHotDegree(50) 
-                                      ]), #T.OneHotDegree(50) just crashes if number too low  ## TODO: Check for highest degree on training data and use that
+        transform=T.Compose([
+                                T.FixedPoints(2048,replace = False, allow_duplicates = False),
+                                T.RadiusGraph(0.01),
+                                T.Distance(),
+                                T.OneHotDegree(50) 
+                            ]), #T.OneHotDegree(50) just crashes if number too low  ## TODO: Check for highest degree on training data and use that
         split = "train"
     )
     
@@ -236,29 +246,61 @@ def load_data(config):
     return train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader
 
 def load_model(modelname = 'SageNet', input_dim=1, hidden_dim=2, embed_dim=3, class_num=6):
-    return SAGE_model(input_dim=input_dim, hidden_dim=hidden_dim, embed_dim=embed_dim, class_num=class_num)
+    if modelname == 'SageNet':
+        return SAGE_model(input_dim=input_dim, hidden_dim=hidden_dim, embed_dim=embed_dim, class_num=class_num)
+    else:
+        return SAGE_model(input_dim=input_dim, hidden_dim=hidden_dim, embed_dim=embed_dim, class_num=class_num)
 
 def train():
 
-    class Config():
-        def __init__(self, kwconf = None, **kwargs):
-            if kwconf is not None:
-                self.conf = {}
-                for key, val in kwconf.items():
-                    setattr(self, key, val)
-                    
-        def __getitem__(self, key):
-            return getattr(self, key)
+    wandb_project = "pointGCNs"
+    wandb_run_name = "playground/shapnet/1"
 
-    config = Config({
-        "model_name": "ShapeNet",
-        "categories": "Airplane",
-        "savedir": "data",
-        "batch_size": 32,
-        "num_workers": 1,
-        "epochs": 50,
-        "learning_rate": FLAGS.learning_rate
-    })
+    modulename = 'wandb'
+    if is_imported(modulename):
+        wandb.init(
+            project=wandb_project, 
+            name=wandb_run_name, 
+            job_type="baseline-train"
+            )
+
+        # Set experiment configs to be synced with wandb
+        config = wandb.config
+
+    else:
+        print(f'{modulename} not imported || Run will only be logged locally')
+
+
+    
+
+        class Config():
+            def __init__(self, kwconf = None, **kwargs):
+                if kwconf is not None:
+                    self.conf = {}
+                    for key, val in kwconf.items():
+                        setattr(self, key, val)
+                        
+            def __getitem__(self, key):
+                return getattr(self, key)
+
+        config = Config({
+            "model_name": "ShapeNet",
+            "categories": "Airplane",
+            "savedir": "data",
+            "batch_size": 32,
+            "num_workers": 1,
+            "epochs": 50,
+            "learning_rate": FLAGS.learning_rate
+        })
+
+    config.seed = 42
+    config.model_name = "ShapeNet"
+    config.categories = "Airplane",
+    config.savedir = "data",
+    config.batch_size = 32,
+    config.num_workers = 1,
+    config.epochs = 50,
+    config.learning_rate = FLAGS.learning_rate
 
     device = torch.device('cpu')
     
@@ -297,8 +339,11 @@ def train():
 
     for epoch in range(config.epochs):
         train_step(epoch, model, optimizer, loss, train_loader, device, config)
-        # val_step(epoch, model, loss, val_loader, device, config)
+        val_step(epoch, model, optimizer, loss, val_loader, device, config)
     # load model
+
+    if is_imported('wandb'):
+        wandb.finish()
 
 
 
@@ -322,12 +367,19 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
         optimizer.step()
         
         epoch_loss += l.item()
-        correct += prediction.max(1)[1].eq(data['y']).sum().item()
+        class_pred = prediction.max(1)[1]
+        correct += class_pred.eq(data['y']).sum().item()
         total_predictions += data['x'].shape[0]
     
     epoch_loss = epoch_loss / num_train_examples
     epoch_accuracy = correct / total_predictions
+    
     print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
+
+    wandb.log({
+        "Train/Loss": epoch_loss,
+        "Train/Accuracy": epoch_accuracy
+    })
 
 # for epoch in range(config.epochs):
 #     train_step(epoch)
@@ -357,6 +409,9 @@ def val_step(epoch, model, loss, val_loader, device, config):
         l = loss(prediction, data.y)
         epoch_loss += l.item()
         correct += prediction.max(1)[1].eq(data.y).sum().item()
+        
+        # if batch_idx < 6:
+            
     
     epoch_loss = epoch_loss / num_val_examples
     epoch_accuracy = correct / len(val_loader.dataset)
@@ -420,5 +475,6 @@ def val_step(epoch, model, loss, val_loader, device, config):
 
 
 if __name__ == "__main__":
+
     train()
     LOG_FOUT.close()
