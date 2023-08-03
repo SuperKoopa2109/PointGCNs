@@ -192,7 +192,7 @@ def load_data(config):
         root = config['savedir'] + "/" + config['model_name'],
         categories = config['categories'],
         transform=T.Compose([
-                                T.FixedPoints(2048,replace = False, allow_duplicates = False),
+                                #T.FixedPoints(2048,replace = False, allow_duplicates = False),
                                 T.RadiusGraph(0.01),
                                 T.Distance(),
                                 T.OneHotDegree(50) 
