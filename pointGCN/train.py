@@ -295,11 +295,11 @@ def train():
 
     config.seed = 42
     config.model_name = "ShapeNet"
-    config.categories = "Airplane",
-    config.savedir = "data",
-    config.batch_size = 32,
-    config.num_workers = 1,
-    config.epochs = 50,
+    config.categories = "Airplane"
+    config.savedir = "data"
+    config.batch_size = 32
+    config.num_workers = 1
+    config.epochs = 50
     config.learning_rate = FLAGS.learning_rate
 
     device = torch.device('cpu')
