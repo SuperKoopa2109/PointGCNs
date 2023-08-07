@@ -73,7 +73,7 @@ class ShapeNet(InMemoryDataset):
           - 50
     """
 
-    url = 'https://drive.google.com/uc?id=1_QgsOggBp3QjrFxKubL9E1gouAOSvXuS&export=download&confirm=t&uuid=3f348c13-0c03-4107-92db-381aaaf9d915'
+    url = 'https://drive.google.com/u/0/uc?id=1JsmKOAKVieP2fKjDqHbvEZF0jCfaAtbJ&export=download&confirm=t&uuid=46b3bc20-71f0-46e7-b29f-90004621db47&at=ALt4Tm36a3ECN8J-oRcEoTj8shPF:1691428344888'
     #'https://drive.google.com/u/0/uc?id=1YCkjkialQRP0lA816AE7vUUpu-W7TAT5&export=download&confirm=t&uuid=2c9a1b85-8341-456d-83f6-bb5f22bdc9c0&at=ALt4Tm10mjpCAG7GtfFCzpafkXgb:1691402861473'
     
            
@@ -180,7 +180,7 @@ class ShapeNet(InMemoryDataset):
         extract_zip(path, self.root)
         os.unlink(path)
         shutil.rmtree(self.raw_dir)
-        name =  'ShapeNet' #'shapenet_part_seg_hdf5_data' # self.url.split('/')[-1].split('.')[0]
+        name =  'shapenetcore_partanno_segmentation_benchmark_v0_normal' # self.url.split('/')[-1].split('.')[0]
         os.rename(osp.join(self.root, name), self.raw_dir)
 
     def process_filenames(self, filenames: List[str]) -> List[Data]:
