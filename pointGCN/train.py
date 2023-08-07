@@ -14,7 +14,11 @@ import torch
 from torch import nn
 
 import torch_geometric.transforms as T
-from torch_geometric.datasets import ShapeNet #ModelNet
+
+# from torch_geometric.datasets import ShapeNet #ModelNet
+
+from dataset.shapenet_loader import ShapeNet
+
 from torch_geometric.loader import DataLoader
 
 from tqdm import tqdm
