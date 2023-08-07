@@ -73,9 +73,9 @@ class ShapeNet(InMemoryDataset):
           - 50
     """
 
-    url = 'https://drive.google.com/u/0/uc?id=1YCkjkialQRP0lA816AE7vUUpu-W7TAT5&export=download&confirm=t&uuid=2c9a1b85-8341-456d-83f6-bb5f22bdc9c0&at=ALt4Tm10mjpCAG7GtfFCzpafkXgb:1691402861473'
+    url = 'https://drive.google.com/uc?id=1_QgsOggBp3QjrFxKubL9E1gouAOSvXuS&export=download&confirm=t&uuid=3f348c13-0c03-4107-92db-381aaaf9d915'
+    #'https://drive.google.com/u/0/uc?id=1YCkjkialQRP0lA816AE7vUUpu-W7TAT5&export=download&confirm=t&uuid=2c9a1b85-8341-456d-83f6-bb5f22bdc9c0&at=ALt4Tm10mjpCAG7GtfFCzpafkXgb:1691402861473'
     
-           
            
     #'https://drive.google.com/file/d/1YCkjkialQRP0lA816AE7vUUpu-W7TAT5/view?usp=sharing'
 
