@@ -343,7 +343,7 @@ def train():
 
     for epoch in range(config.epochs):
         train_step(epoch, model, optimizer, loss, train_loader, device, config)
-        val_step(epoch, model, optimizer, loss, val_loader, device, config)
+        val_step(epoch, model, loss, val_loader, device, config)
     # load model
 
     if is_imported('wandb'):
