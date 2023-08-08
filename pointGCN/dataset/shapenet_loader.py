@@ -181,7 +181,7 @@ class ShapeNet(InMemoryDataset):
         path = download_url(self.url, self.root)
         extract_zip(path, self.root)
         os.unlink(path)
-        # shutil.rmtree(self.raw_dir)
+        shutil.rmtree(self.raw_dir)
         name =  'shapenet_part_seg_hdf5_data' # self.url.split('/')[-1].split('.')[0]
         os.rename(osp.join(self.root, name), self.raw_dir)
 
