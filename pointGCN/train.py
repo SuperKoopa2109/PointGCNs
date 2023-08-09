@@ -229,6 +229,21 @@ def load_data(config):
         num_workers=config['num_workers']
     )
 
+    random_indices = np.random.choice(range(len(val_dataset)), size = config.vis_sample_size, replace = False)
+
+    vis_loader = DataLoader(
+        [val_dataset[idx] for idx in random_indices],
+        batch_size = 1,
+        shuffle = True,
+        num_workers = config['num_workers']
+    )
+
+
+
+    # vis_loader = DataLoader(
+    #     vis_dataset, 
+    #     batch_size = 
+    # )
 
     test_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'] + "_test",
@@ -247,7 +262,7 @@ def load_data(config):
     #     num_workers=config['num_workers']
     )
 
-    return train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader
+    return train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader, vis_loader
 
 def load_model(modelname = 'SageNet', input_dim=1, hidden_dim=2, embed_dim=3, class_num=6):
     if modelname == 'SageNet':
@@ -294,7 +309,8 @@ def train():
             "batch_size": 32,
             "num_workers": 1,
             "epochs": 50,
-            "learning_rate": FLAGS.learning_rate
+            "learning_rate": FLAGS.learning_rate,
+            "vis_sample_size": 5
         })
 
     config.seed = 42
@@ -305,10 +321,19 @@ def train():
     config.num_workers = 1
     config.epochs = 50
     config.learning_rate = FLAGS.learning_rate
+    config.vis_sample_size = 5
 
     device = torch.device('cpu')
     
-    train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader = load_data(config)
+    table = wandb.Table(
+        columns=[
+            "Epoch",
+            "Ground-Truth",
+            "Predicted-Classes"
+        ]
+    )
+
+    train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader, vis_loader = load_data(config)
 
 
     # Define PointNet++ model.
@@ -344,9 +369,13 @@ def train():
     for epoch in range(config.epochs):
         train_step(epoch, model, optimizer, loss, train_loader, device, config)
         val_step(epoch, model, loss, val_loader, device, config)
+        visualize_evaluation(epoch, model, table, vis_loader, config, device)
     # load model
 
+    
+
     if is_imported('wandb'):
+        wandb.log({"PredClass_vs_TrueClass": table})
         wandb.finish()
 
 
@@ -420,6 +449,9 @@ def val_step(epoch, model, loss, val_loader, device, config):
     epoch_loss = epoch_loss / num_val_examples
     epoch_accuracy = correct / len(val_loader.dataset)
     
+    print(f'*** VALIDATION ***')
+    print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
+
     log = {
         "Validation/Loss": epoch_loss,
         "Validation/Accuracy": epoch_accuracy
@@ -431,32 +463,36 @@ def val_step(epoch, model, loss, val_loader, device, config):
 
     return log
 
-# def visualize_evaluation(table, epoch):
-#     """Visualize validation result in a Weights & Biases Table"""
-#     point_clouds, losses, predictions, ground_truths, is_correct = [], [], [], [], []
-#     progress_bar = tqdm(
-#         range(config.num_visualization_samples),
-#         desc=f"Generating Visualizations for Epoch {epoch}/{config.epochs}"
-#     )
-    
-#     for idx in progress_bar:
-#         data = next(iter(vizualization_loader)).to(device)
+def visualize_evaluation(epoch, model, table, vis_loader, config, device):
+    """Visualize validation result in a Weights & Biases Table"""
+    predictions, ground_truths = [], []
+    progress_bar = tqdm(
+        range(config.vis_sample_size),
+        desc=f"Generating Visualizations for Epoch {epoch}/{config.epochs}"
+    )
+
+    for idx in progress_bar:
+        data = next(iter(vis_loader)).to(device)
         
-#         with torch.no_grad():
-#             prediction = model(data)
+        with torch.no_grad():
+            preds = model(data)
         
-#         point_clouds.append(
-#             wandb.Object3D(torch.squeeze(data.pos, dim=0).cpu().numpy())
-#         )
-#         losses.append(F.nll_loss(prediction, data.y).item())
-#         predictions.append(config.categories[int(prediction.max(1)[1].item())])
-#         ground_truths.append(config.categories[int(data.y.item())])
-#         is_correct.append(prediction.max(1)[1].eq(data.y).sum().item())
+        preds = preds.max(1)[1]
+
+        sample_size = data['pos'].shape[0]
+
+        predictions.append(
+            wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], preds.reshape(sample_size, 1)]), dim=0).cpu().numpy())
+        )
+        ground_truths.append(
+            wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], data['y'].reshape(sample_size, 1)]), dim=0).cpu().numpy())
+        )
+
     
-#     table.add_data(
-#         epoch, point_clouds, losses, predictions, ground_truths, is_correct
-#     )
-#     return table
+    table.add_data(
+        epoch, predictions, ground_truths
+    )
+    return table
 
 
 # def save_checkpoint(epoch):
