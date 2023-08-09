@@ -308,7 +308,7 @@ def train():
             "savedir": "data",
             "batch_size": 32,
             "num_workers": 1,
-            "epochs": 50,
+            "epochs": 3,
             "learning_rate": FLAGS.learning_rate,
             "vis_sample_size": 5
         })
@@ -319,7 +319,7 @@ def train():
     config.savedir = "data"
     config.batch_size = 32
     config.num_workers = 1
-    config.epochs = 50
+    config.epochs = 3
     config.learning_rate = FLAGS.learning_rate
     config.vis_sample_size = 5
 
