@@ -162,7 +162,7 @@ class SAGE_model(nn.Module):
 
         modules.append(nn.Linear(no_of_layers * hidden_dim, class_num))
         modules.append(nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True))
-        modules.append(nn.Sigmoid())
+        modules.append(nn.Softmax(-1))
 
         self.node_embedder = gnn.Sequential(
                 'x, edge_index',

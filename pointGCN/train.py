@@ -264,7 +264,7 @@ def load_data(config):
 
     return train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader, vis_loader
 
-def load_model(modelname = 'SageNet', input_dim=1, hidden_dim=2, embed_dim=3, class_num=6):
+def load_model(modelname, input_dim, hidden_dim=128, embed_dim=64, class_num=4):
     if modelname == 'SageNet':
         return SAGE_model(input_dim=input_dim, hidden_dim=hidden_dim, embed_dim=embed_dim, class_num=class_num)
     else:
@@ -338,7 +338,7 @@ def train():
 
     # Define PointNet++ model.
 
-    sample = next(iter(train_loader)) #train_loader.dataset[0] #['y']
+    sample = next(iter(train_dataset)) #train_loader.dataset[0] #['y']
 
     study = optuna.create_study()
 
@@ -490,7 +490,7 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
 
     
     table.add_data(
-        epoch, predictions, ground_truths
+        epoch, ground_truths, predictions
     )
     return table
 
