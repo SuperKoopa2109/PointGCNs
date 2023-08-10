@@ -198,7 +198,7 @@ class SAGE_model(nn.Module):
 
         # last input_dim_layer is the output layer of the last hidden layer
         modules.append(nn.Linear(input_dim_layer, class_num)) # no_of_layers * hidden_dim
-        modules.append(nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True))
+        # modules.append(nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True))
         modules.append(nn.Softmax(-1))
 
         self.node_embedder = gnn.Sequential(

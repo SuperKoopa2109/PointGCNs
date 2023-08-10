@@ -396,7 +396,7 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
     
     progress_bar = tqdm(
         range(num_train_examples),
-        desc=f"Training Epoch {epoch}/{config.epochs}"
+        desc=f"Training Epoch {epoch + 1}/{config.epochs}"
     )
     for batch_idx in progress_bar:
         data = next(iter(train_loader)).to(device)
