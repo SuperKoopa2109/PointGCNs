@@ -354,7 +354,7 @@ def train():
         input_dim = sample['x'].shape[1], 
         no_of_layers = config.hidden_layers,
         hidden_dim=64, 
-        embed_dim=128, 
+        embed_dim=32, 
         class_num=int(sample['y'].max() + 1)).to(device)
     print(model)
 

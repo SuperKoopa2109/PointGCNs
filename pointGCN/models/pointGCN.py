@@ -179,7 +179,7 @@ class SAGE_model(nn.Module):
                         )
                     )
             
-            input_dim_layer = out_layer_dim * 2
+            input_dim_layer = out_layer_dim
             out_layer_dim = input_dim_layer * 2
 
         # for layer_idx in range(0, no_of_layers - 1):
