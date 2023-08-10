@@ -434,7 +434,7 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
 def val_step(epoch, model, loss, val_loader, device, config):
     """Validation Step"""
     model.eval()
-    epoch_loss, correct = 0, 0
+    epoch_loss, correct, total_predictions = 0, 0, 0
     num_val_examples = len(val_loader)
     
     progress_bar = tqdm(
@@ -447,15 +447,23 @@ def val_step(epoch, model, loss, val_loader, device, config):
         with torch.no_grad():
             prediction = model(data)
         
-        l = loss(prediction, data.y)
+        l = loss(prediction, data['y'])
+        # epoch_loss += l.item()
+        # correct += prediction.max(1)[1].eq(data.y).sum().item()
+
         epoch_loss += l.item()
-        correct += prediction.max(1)[1].eq(data.y).sum().item()
+        class_pred = prediction.max(1)[1]
+        correct += class_pred.eq(data['y']).sum().item()
+        total_predictions += data['x'].shape[0]
+    
+    epoch_loss = epoch_loss / num_val_examples
+    epoch_accuracy = correct / total_predictions
         
         # if batch_idx < 6:
             
     
-    epoch_loss = epoch_loss / num_val_examples
-    epoch_accuracy = correct / len(val_loader.dataset)
+    # epoch_loss = epoch_loss / num_val_examples
+    # epoch_accuracy = correct / len(val_loader.dataset)
     
     print(f'*** VALIDATION ***')
     print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
