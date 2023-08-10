@@ -279,9 +279,11 @@ def train():
     if is_imported(modulename):
         wandb.init(
             project=wandb_project, 
-            name=wandb_run_name, 
+            #name=wandb_run_name, 
             job_type="baseline-train"
             )
+
+        wandb_run_name = wandb.run.name
 
         # Set experiment configs to be synced with wandb
         config = wandb.config
@@ -322,6 +324,7 @@ def train():
     config.epochs = 3
     config.learning_rate = FLAGS.learning_rate
     config.vis_sample_size = 5
+    config.wandb_run_name = wandb_run_name
 
     device = torch.device('cpu')
     
@@ -479,13 +482,15 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         
         preds = preds.max(1)[1]
 
-        sample_size = data['pos'].shape[0]
+        os.mkdir(os.path.join(config.savedir, config.wandb_run_name))
+        torch.save(preds, os.path.join(config.savedir, config.wandb_run_name, f'preds_{config.wandb_run_name}.pt'))
+        torch.save(data['y'], os.path.join(config.savedir, config.wandb_run_name, f'trues_{config.wandb_run_name}.pt'))
 
         predictions.append(
-            wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], preds.reshape(sample_size, 1)]), dim=0).cpu().numpy())
+            wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], preds.reshape(-1, 1)]), dim=0).cpu().numpy())
         )
         ground_truths.append(
-            wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], data['y'].reshape(sample_size, 1)]), dim=0).cpu().numpy())
+            wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], data['y'].reshape(-1, 1)]), dim=0).cpu().numpy())
         )
 
     
