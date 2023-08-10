@@ -330,7 +330,7 @@ def train():
     config.vis_sample_size = 5
     config.wandb_run_name = wandb_run_name
 
-    device = torch.device('cpu')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     table = wandb.Table(
         columns=[
