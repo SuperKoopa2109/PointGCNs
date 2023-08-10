@@ -136,31 +136,68 @@ class SAGE_model(nn.Module):
 
         # embed data
         if conv_type == 'SAGEConv':
-            modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+            modules.append((gnn.SAGEConv(input_dim, embed_dim), 'x, edge_index -> x'))
         else: 
-            modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+            modules.append((gnn.SAGEConv(input_dim, embed_dim), 'x, edge_index -> x'))
 
         modules.append(nn.ReLU(inplace=True))
 
         modules.append((nn.Dropout(p = drop_rate), 'x -> x'))
         #modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=hidden_dim, norm=norm))
 
-        # TODO: Do Upsampling and Downsampling again?? 
-        for layer_idx in range(1, no_of_layers):
-            
-            input_dim_layer = layer_idx * hidden_dim
-            layer_dim = (layer_idx + 1) * hidden_dim
+        assert(np.log2(hidden_dim).is_integer())
 
+        exp_layer_rate = np.log2(hidden_dim).astype(np.int32)
+
+
+        # TODO: What if there is no hidden layer at all? 
+
+        # first hidden layer to scale from embed dim to hidden dim
+
+        input_dim_layer = embed_dim
+        out_layer_dim = 2 ** exp_layer_rate
+
+        # modules.extend(self.get_hidden_layer(
+        #     input_dim = input_dim_layer,
+        #     hidden_dim = out_layer_dim,
+        #     norm = self.norm,
+        #     drop_rate = self.drop_rate,
+        #     negative_slope = self.negative_slope
+        #     )
+        # )
+
+        # TODO: Do Upsampling and Downsampling again?? 
+        
+        for layer_idx in range(0, no_of_layers):
+            
             modules.extend(self.get_hidden_layer(
                         input_dim = input_dim_layer, 
-                        hidden_dim = layer_dim, 
+                        hidden_dim = out_layer_dim, 
                         norm = self.norm, 
                         drop_rate = self.drop_rate,
                         negative_slope = self.negative_slope
                         )
                     )
+            
+            input_dim_layer = out_layer_dim * 2
+            out_layer_dim = input_dim_layer * 2
 
-        modules.append(nn.Linear(no_of_layers * hidden_dim, class_num))
+        # for layer_idx in range(0, no_of_layers - 1):
+            
+        #     input_dim_layer = out_layer_dim * 2
+        #     out_layer_dim = input_dim_layer * 2 #(layer_idx + 1) * hidden_dim
+
+        #     modules.extend(self.get_hidden_layer(
+        #                 input_dim = input_dim_layer, 
+        #                 hidden_dim = out_layer_dim, 
+        #                 norm = self.norm, 
+        #                 drop_rate = self.drop_rate,
+        #                 negative_slope = self.negative_slope
+        #                 )
+        #             )
+
+        # last input_dim_layer is the output layer of the last hidden layer
+        modules.append(nn.Linear(input_dim_layer, class_num)) # no_of_layers * hidden_dim
         modules.append(nn.LeakyReLU(negative_slope=self.negative_slope, inplace=True))
         modules.append(nn.Softmax(-1))
 

@@ -137,6 +137,7 @@ else:
     # parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
     # parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
     parser.add_argument('--epochs', type=int, default=5, help='No of epochs for training [default: 5]')
+    parser.add_argument('--layers', type=int, default=3, help='No of hidden layers [default: 3]')
     parser.add_argument('--dataset', default='shapenet', help='Dataset to be used for prediction [default: modelnet40]')
     parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
     # FLAGS = parser.parse_args()
@@ -265,11 +266,11 @@ def load_data(config):
 
     return train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader, vis_loader
 
-def load_model(modelname, input_dim, hidden_dim=128, embed_dim=64, class_num=4):
+def load_model(modelname, input_dim, no_of_layers=3, hidden_dim=128, embed_dim=64, class_num=4):
     if modelname == 'SageNet':
-        return SAGE_model(input_dim=input_dim, hidden_dim=hidden_dim, embed_dim=embed_dim, class_num=class_num)
+        return SAGE_model(input_dim=input_dim, no_of_layers=no_of_layers, hidden_dim=hidden_dim, embed_dim=embed_dim, class_num=class_num)
     else:
-        return SAGE_model(input_dim=input_dim, hidden_dim=hidden_dim, embed_dim=embed_dim, class_num=class_num)
+        return SAGE_model(input_dim=input_dim, no_of_layers=no_of_layers, hidden_dim=hidden_dim, embed_dim=embed_dim, class_num=class_num)
 
 def train():
 
@@ -324,6 +325,7 @@ def train():
     config.batch_size = 32
     config.num_workers = 1
     config.epochs = FLAGS.epochs
+    config.hidden_layers = FLAGS.layers
     config.learning_rate = FLAGS.learning_rate
     config.vis_sample_size = 5
     config.wandb_run_name = wandb_run_name
@@ -350,6 +352,7 @@ def train():
     model = load_model(
         modelname = 'SageNet', 
         input_dim = sample['x'].shape[1], 
+        no_of_layers = config.hidden_layers,
         hidden_dim=64, 
         embed_dim=128, 
         class_num=int(sample['y'].max() + 1)).to(device)
