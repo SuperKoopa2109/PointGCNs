@@ -29,11 +29,13 @@ parser.add_argument('--output_dir', type=str, default='train_results', help='Dir
 parser.add_argument('--wd', type=float, default=0, help='Weight Decay [Default: 0.0]')
 parser.add_argument('--dataset', default='modelnet40', help='Dataset to be used for prediction [default: modelnet40]')
 parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
+parser.add_argument('--use_drive', default='False', help='results are stored in google drive')
 FLAGS = parser.parse_args()
 
 print(f"*******BASE_DIR: {param_config.get_value('paths', 'BASE_DIR')}*******")
 param_config.set_value('system', 'dataset', FLAGS.dataset)
 param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
+param_config.set_value('system', 'use_drive', FLAGS.use_drive)
 param_config.save()
 
 import provider
