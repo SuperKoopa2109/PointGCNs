@@ -478,11 +478,12 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         data = next(iter(vis_loader)).to(device)
         
         with torch.no_grad():
-            preds = model(data)
+            logit_preds = model(data)
         
-        preds = preds.max(1)[1]
+        preds = logit_preds.max(1)[1]
 
         os.mkdir(os.path.join(config.savedir, config.wandb_run_name))
+        torch.save(logit_preds, os.path.join(config.savedir, config.wandb_run_name, f'logit_preds_{config.wandb_run_name}.pt'))
         torch.save(preds, os.path.join(config.savedir, config.wandb_run_name, f'preds_{config.wandb_run_name}.pt'))
         torch.save(data['y'], os.path.join(config.savedir, config.wandb_run_name, f'trues_{config.wandb_run_name}.pt'))
 
