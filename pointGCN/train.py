@@ -136,6 +136,7 @@ else:
     # parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
     # parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
     # parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.8]')
+    parser.add_argument('--epochs', type=int, default=5, help='No of epochs for training [default: 5]')
     parser.add_argument('--dataset', default='shapenet', help='Dataset to be used for prediction [default: modelnet40]')
     parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
     # FLAGS = parser.parse_args()
@@ -322,7 +323,7 @@ def train():
     config.logdir = LOG_DIR
     config.batch_size = 32
     config.num_workers = 1
-    config.epochs = 3
+    config.epochs = FLAGS.epochs
     config.learning_rate = FLAGS.learning_rate
     config.vis_sample_size = 5
     config.wandb_run_name = wandb_run_name
@@ -487,8 +488,8 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         if not os.path.exists(log_run_path): os.mkdir(log_run_path)
         # os.mkdir(os.path.join(config.logdir, config.wandb_run_name))
         torch.save(logit_preds, os.path.join(log_run_path, f'logit_preds_{config.wandb_run_name}.pt'))
-        torch.save(preds, os.path.join(config.savedir, config.wandb_run_name, f'preds_{config.wandb_run_name}.pt'))
-        torch.save(data['y'], os.path.join(config.savedir, config.wandb_run_name, f'trues_{config.wandb_run_name}.pt'))
+        torch.save(preds, os.path.join(log_run_path, f'preds_{config.wandb_run_name}.pt'))
+        torch.save(data['y'], os.path.join(log_run_path, f'trues_{config.wandb_run_name}.pt'))
 
         predictions.append(
             wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], preds.reshape(-1, 1)]), dim=0).cpu().numpy())
