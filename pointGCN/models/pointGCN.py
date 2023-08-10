@@ -155,7 +155,7 @@ class SAGE_model(nn.Module):
         # first hidden layer to scale from embed dim to hidden dim
 
         input_dim_layer = embed_dim
-        out_layer_dim = 2 ** exp_layer_rate
+        out_layer_dim = int(2 ** exp_layer_rate)
 
         # modules.extend(self.get_hidden_layer(
         #     input_dim = input_dim_layer,
@@ -180,7 +180,7 @@ class SAGE_model(nn.Module):
                     )
             
             input_dim_layer = out_layer_dim
-            out_layer_dim = input_dim_layer * 2
+            out_layer_dim = int(input_dim_layer * 2)
 
         # for layer_idx in range(0, no_of_layers - 1):
             
