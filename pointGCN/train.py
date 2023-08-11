@@ -487,6 +487,21 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         desc=f"Generating Visualizations for Epoch {epoch}/{config.epochs}"
     )
 
+    # determine all shapes for data
+    data = next(iter(vis_loader)).to(device)
+
+    no_of_samples, embedded_dim = data['x'].size()
+
+
+    with torch.no_grad():
+            logit_preds = model(data)
+
+    all_logit_preds = torch.zeros([config.vis_sample_size, no_of_samples, logit_preds.size()[-1]])
+    all_preds = torch.zeros([config.vis_sample_size, no_of_samples])
+    all_trues = torch.zeros([config.vis_sample_size, no_of_samples])
+    all_norm_data = torch.zeros([config.vis_sample_size, no_of_samples, embedded_dim])
+    all_positions = torch.zeros([config.vis_sample_size, no_of_samples, data['pos'].size()[-1]])
+
     for idx in progress_bar:
         data = next(iter(vis_loader)).to(device)
         
@@ -498,11 +513,12 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         log_run_path = os.path.join(config.logdir, config.wandb_run_name)
         if not os.path.exists(log_run_path): os.mkdir(log_run_path)
         # os.mkdir(os.path.join(config.logdir, config.wandb_run_name))
-        torch.save(logit_preds, os.path.join(log_run_path, f'logit_preds_{config.wandb_run_name}.pt'))
-        torch.save(preds, os.path.join(log_run_path, f'preds_{config.wandb_run_name}.pt'))
-        torch.save(data['y'], os.path.join(log_run_path, f'trues_{config.wandb_run_name}.pt'))
-        torch.save(data['x'], os.path.join(log_run_path, f'norm_data_{config.wandb_run_name}.pt'))
-        torch.save(data['pos'], os.path.join(log_run_path, f'positions_{config.wandb_run_name}.pt'))
+
+        all_logit_preds[idx] = logit_preds
+        all_preds[idx] = preds
+        all_trues[idx] = data['y']
+        all_norm_data[idx] = data['x']
+        all_positions[idx] = data['pos']
 
         predictions.append(
             wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], preds.reshape(-1, 1)]), dim=0).cpu().numpy())
@@ -511,8 +527,14 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
             wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], data['y'].reshape(-1, 1)]), dim=0).cpu().numpy())
         )
 
+    torch.save(all_logit_preds, os.path.join(log_run_path, f'logit_preds_{config.wandb_run_name}_epoch_{epoch}.pt'))
+    torch.save(all_preds, os.path.join(log_run_path, f'preds_{config.wandb_run_name}_epoch_{epoch}.pt'))
+    torch.save(all_trues, os.path.join(log_run_path, f'trues_{config.wandb_run_name}_epoch_{epoch}.pt'))
+    torch.save(all_norm_data, os.path.join(log_run_path, f'norm_data_{config.wandb_run_name}_epoch_{epoch}.pt'))
+    torch.save(all_positions, os.path.join(log_run_path, f'positions_{config.wandb_run_name}_epoch_{epoch}.pt'))
+
     # Store 3D models every 5 epochs
-    if (epoch + 1 % 5 == 0):
+    if ((epoch + 1) % 5 == 0):
         table.add_data(
             epoch, ground_truths, predictions
         )
