@@ -198,7 +198,7 @@ def load_data(config):
         root = config['savedir'] + "/" + config['model_name'],
         categories = config['categories'],
         transform=T.Compose([
-                                #T.FixedPoints(2048,replace = False, allow_duplicates = False),
+                                T.FixedPoints(2048,replace = False, allow_duplicates = True),
                                 T.RadiusGraph(0.01),
                                 T.Distance(),
                                 T.OneHotDegree(50) 
@@ -217,9 +217,11 @@ def load_data(config):
     val_dataset = ShapeNet(
             root = config['savedir'] + "/" + config['model_name'],
             categories = config['categories'],
-            transform=T.Compose([T.RadiusGraph(0.01),
-                                        T.Distance(),
-                                        T.OneHotDegree(50) 
+            transform=T.Compose([
+                                    T.FixedPoints(2048,replace = False, allow_duplicates = True),
+                                    T.RadiusGraph(0.01),
+                                    T.Distance(),
+                                    T.OneHotDegree(50) 
                                         ]),
             split = "val"
         )
