@@ -327,7 +327,7 @@ def train():
     config.epochs = FLAGS.epochs
     config.hidden_layers = FLAGS.layers
     config.learning_rate = FLAGS.learning_rate
-    config.vis_sample_size = 5
+    config.vis_sample_size = 3
     config.wandb_run_name = wandb_run_name
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -501,6 +501,8 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         torch.save(logit_preds, os.path.join(log_run_path, f'logit_preds_{config.wandb_run_name}.pt'))
         torch.save(preds, os.path.join(log_run_path, f'preds_{config.wandb_run_name}.pt'))
         torch.save(data['y'], os.path.join(log_run_path, f'trues_{config.wandb_run_name}.pt'))
+        torch.save(data['x'], os.path.join(log_run_path, f'norm_data_{config.wandb_run_name}.pt'))
+        torch.save(data['pos'], os.path.join(log_run_path, f'positions_{config.wandb_run_name}.pt'))
 
         predictions.append(
             wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], preds.reshape(-1, 1)]), dim=0).cpu().numpy())
@@ -509,10 +511,11 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
             wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], data['y'].reshape(-1, 1)]), dim=0).cpu().numpy())
         )
 
-    
-    table.add_data(
-        epoch, ground_truths, predictions
-    )
+    # Store 3D models every 5 epochs
+    if (epoch + 1 % 5 == 0):
+        table.add_data(
+            epoch, ground_truths, predictions
+        )
     return table
 
 
