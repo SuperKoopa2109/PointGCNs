@@ -417,10 +417,11 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
     
     print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
 
-    wandb.log({
-        "Train/Loss": epoch_loss,
-        "Train/Accuracy": epoch_accuracy
-    })
+    if is_imported('wandb'):
+        wandb.log({
+            "Train/Loss": epoch_loss,
+            "Train/Accuracy": epoch_accuracy
+        })
 
 # for epoch in range(config.epochs):
 #     train_step(epoch)
@@ -472,10 +473,9 @@ def val_step(epoch, model, loss, val_loader, device, config):
         "Validation/Loss": epoch_loss,
         "Validation/Accuracy": epoch_accuracy
     }
-    # wandb.log({
-    #     "Validation/Loss": epoch_loss,
-    #     "Validation/Accuracy": epoch_accuracy
-    # })
+
+    if is_imported('wandb'):
+        wandb.log(log)
 
     return log
 
