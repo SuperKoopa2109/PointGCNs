@@ -368,11 +368,11 @@ def objective(trial):
         visualize_evaluation(epoch, model, table, vis_loader, config, device)
 
 
-def train(FLAGS, hyperparam_tuning = False):
+def train(FLAGS):
 
-    if hyperparam_tuning == "True":
+    if FLAGS.train_hyperparams == "True":
         study = optuna.create_study(sampler=TPESampler(), directions=["minimize"])
-        #study.optimize(objective, n_trials=100, timeout=300)
+        study.optimize(objective, n_trials=20)
     else:
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
