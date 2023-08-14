@@ -308,7 +308,7 @@ def objective(trial):
     config.batch_size = trial.suggest_int('batch_size', low=32, high=128, step=32)
     config.num_workers = 1
     config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
-    config.epochs = trial.suggest_int('epoch_count', low=50, high=200, step=50)
+    config.epochs = trial.suggest_int('epoch_count', low=30, high=90, step=30)
     config.embed_dim=trial.suggest_int('embed_dim', low=64, high=128, step=64)
     config.hidden_layers = trial.suggest_int("num_layers", 1, 4)
     config.hidden_dim=trial.suggest_int('hidden_dim', low=128, high=256, step=128)
