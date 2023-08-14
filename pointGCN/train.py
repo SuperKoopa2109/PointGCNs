@@ -336,7 +336,7 @@ def objective(trial):
     model = load_model(
         modelname = 'SageNet', 
         input_dim = sample['x'].shape[1], 
-        embed_dim=trial.config.embed_dim, 
+        embed_dim=config.embed_dim, 
         hidden_dim=config.hidden_dim,  #dimensions of first hidden layer
         no_of_layers = config.hidden_layers,
         class_num=int(sample['y'].max() + 1),
