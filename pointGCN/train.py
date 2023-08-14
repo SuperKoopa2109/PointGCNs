@@ -305,7 +305,7 @@ def objective(trial):
     config.categories = "Airplane"
     config.savedir = "data"
     config.logdir = LOG_DIR
-    config.batch_size = trial.suggest_int('epoch_count', low=32, high=128, step=32)
+    config.batch_size = trial.suggest_int('batch_size', low=32, high=128, step=32)
     config.num_workers = 1
     config.optimizer = trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
     config.epochs = trial.suggest_int('epoch_count', low=50, high=200, step=50)
