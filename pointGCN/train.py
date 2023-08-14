@@ -692,5 +692,5 @@ if __name__ == "__main__":
     LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
     LOG_FOUT.write(str(FLAGS)+'\n')
 
-    train(FLAGS=FLAGS, hyperparam_tuning=True)
+    train(FLAGS=FLAGS)
     LOG_FOUT.close()
