@@ -370,7 +370,7 @@ def objective(trial):
 
 def train(FLAGS, hyperparam_tuning = False):
 
-    if hyperparam_tuning == True:
+    if hyperparam_tuning == "True":
         study = optuna.create_study(sampler=TPESampler(), directions=["minimize"])
         #study.optimize(objective, n_trials=100, timeout=300)
     else:
