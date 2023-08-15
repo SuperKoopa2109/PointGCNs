@@ -241,7 +241,8 @@ def load_model(
         modelname, 
         input_dim, 
         embed_dim=64, 
-        hidden_dim=128, 
+        hidden_dim=128,
+        conv_type='SAGEConv',
         no_of_layers=3, 
         class_num=4,
         drop_rate = 0.,
@@ -253,7 +254,8 @@ def load_model(
         return SAGE_model(
              input_dim=input_dim, 
              embed_dim=embed_dim, 
-             hidden_dim=hidden_dim, 
+             hidden_dim=hidden_dim,
+             conv_type=conv_type,
              no_of_layers=no_of_layers, 
              class_num=class_num,
              drop_rate = drop_rate,
@@ -265,6 +267,7 @@ def load_model(
              input_dim=input_dim, 
              embed_dim=embed_dim, 
              hidden_dim=hidden_dim, 
+             conv_type=conv_type,
              no_of_layers=no_of_layers, 
              class_num=class_num,
              drop_rate = drop_rate,
@@ -311,6 +314,7 @@ def objective(trial):
     config.epochs = trial.suggest_int('epoch_count', low=30, high=90, step=30)
     config.embed_dim=trial.suggest_int('embed_dim', low=64, high=128, step=64)
     config.hidden_layers = trial.suggest_int("num_layers", 1, 4)
+    config.conv_layer = trial.suggest_categorical('conv_layer', ['SAGEConv', 'GATConv', 'GCNConv'])
     config.hidden_dim=trial.suggest_int('hidden_dim', low=128, high=256, step=128)
     config.learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
     config.drop_rate = trial.suggest_float("dropout_rate", 0.0, 1.0)
@@ -338,6 +342,7 @@ def objective(trial):
         input_dim = sample['x'].shape[1], 
         embed_dim=config.embed_dim, 
         hidden_dim=config.hidden_dim,  #dimensions of first hidden layer
+        conv_type=config.conv_layer,
         no_of_layers = config.hidden_layers,
         class_num=int(sample['y'].max() + 1),
         drop_rate = config.drop_rate,
@@ -403,9 +408,16 @@ def train(FLAGS):
         config.logdir = LOG_DIR
         config.batch_size = 32
         config.num_workers = 1
+        config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
         config.epochs = FLAGS.epochs
+        config.embed_dim = 64
         config.hidden_layers = FLAGS.layers
-        config.learning_rate = FLAGS.learning_rate
+        config.conv_layer = 'SAGEConv' #, 'GATConv', 'GCNConv'
+        config.hidden_dim = 128
+        config.learning_rate = 1e-5 #, 1e-2
+        config.drop_rate = 0.0
+        config.negative_slope = 0.0 #, 0.2
+        config.norm_layer = 'Batch' # "None", "Batch", "Instance"
         config.vis_sample_size = 3
         config.wandb_run_name = wandb_run_name
 
@@ -424,14 +436,26 @@ def train(FLAGS):
         sample = next(iter(train_dataset)) #train_loader.dataset[0] #['y']
         
         
-
         model = load_model(
             modelname = 'SageNet', 
             input_dim = sample['x'].shape[1], 
+            embed_dim=config.embed_dim, 
+            hidden_dim=config.hidden_dim,  #dimensions of first hidden layer
+            conv_type=config.conv_layer,
             no_of_layers = config.hidden_layers,
-            hidden_dim=128, 
-            embed_dim=64, 
-            class_num=int(sample['y'].max() + 1)).to(device)
+            class_num=int(sample['y'].max() + 1),
+            drop_rate = config.drop_rate,
+            negative_slope = config.negative_slope, 
+            norm = config.norm_layer
+        ).to(device)
+
+        # model = load_model(
+        #     modelname = 'SageNet', 
+        #     input_dim = sample['x'].shape[1], 
+        #     no_of_layers = config.hidden_layers,
+        #     hidden_dim=128, 
+        #     embed_dim=64, 
+        #     class_num=int(sample['y'].max() + 1)).to(device)
         print(model)
 
         # TODO: use .unique instead ?? 

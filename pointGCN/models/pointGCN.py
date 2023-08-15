@@ -135,15 +135,19 @@ class SAGE_model(nn.Module):
         modules = []
 
         # embed data
+
         if conv_type == 'SAGEConv':
             modules.append((gnn.SAGEConv(input_dim, embed_dim), 'x, edge_index -> x'))
+        elif conv_type == 'GATConv':
+            modules.append((gnn.GATConv(input_dim, embed_dim), 'x, edge_index -> x'))
+        elif conv_type == 'GCNConv':
+            modules.append((gnn.GCNConv(input_dim, embed_dim), 'x, edge_index -> x'))
         else: 
             modules.append((gnn.SAGEConv(input_dim, embed_dim), 'x, edge_index -> x'))
 
         modules.append(nn.ReLU(inplace=True))
 
         modules.append((nn.Dropout(p = drop_rate), 'x -> x'))
-        #modules.extend(self.get_hidden_layer(input_dim=input_dim, hidden_dim=hidden_dim, norm=norm))
 
         assert(np.log2(hidden_dim).is_integer())
 
@@ -156,15 +160,6 @@ class SAGE_model(nn.Module):
 
         input_dim_layer = embed_dim
         out_layer_dim = int(2 ** exp_layer_rate)
-
-        # modules.extend(self.get_hidden_layer(
-        #     input_dim = input_dim_layer,
-        #     hidden_dim = out_layer_dim,
-        #     norm = self.norm,
-        #     drop_rate = self.drop_rate,
-        #     negative_slope = self.negative_slope
-        #     )
-        # )
 
         # TODO: Do Upsampling and Downsampling again?? 
         
@@ -182,19 +177,6 @@ class SAGE_model(nn.Module):
             input_dim_layer = out_layer_dim
             out_layer_dim = int(input_dim_layer * 2)
 
-        # for layer_idx in range(0, no_of_layers - 1):
-            
-        #     input_dim_layer = out_layer_dim * 2
-        #     out_layer_dim = input_dim_layer * 2 #(layer_idx + 1) * hidden_dim
-
-        #     modules.extend(self.get_hidden_layer(
-        #                 input_dim = input_dim_layer, 
-        #                 hidden_dim = out_layer_dim, 
-        #                 norm = self.norm, 
-        #                 drop_rate = self.drop_rate,
-        #                 negative_slope = self.negative_slope
-        #                 )
-        #             )
 
         # last input_dim_layer is the output layer of the last hidden layer
         modules.append(nn.Linear(input_dim_layer, class_num)) # no_of_layers * hidden_dim
@@ -298,7 +280,14 @@ class SAGE_model(nn.Module):
             negative_slope = 0.,):
         modules = []
 
-        modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+        if conv_type == 'SAGEConv':
+            modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+        elif conv_type == 'GATConv':
+            modules.append((gnn.GATConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+        elif conv_type == 'GCNConv':
+            modules.append((gnn.GCNConv(input_dim, hidden_dim), 'x, edge_index -> x'))
+        else: 
+            modules.append((gnn.SAGEConv(input_dim, hidden_dim), 'x, edge_index -> x'))
 
         # Normalization before after convolution, but before activation
         # as it has been done in resnet as well (\cite He et al., Deep Residual Learning for Image Recognition)
