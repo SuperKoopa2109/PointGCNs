@@ -22,10 +22,15 @@ from dataset.shapenet_loader import ShapeNet
 
 from torch_geometric.loader import DataLoader
 
+from torch_geometric.utils import degree 
+
 from tqdm import tqdm
+import datetime
 
 # For hyper parameter optimization
 import optuna
+import logging
+
 from optuna.samplers import TPESampler
 
 # For logging
@@ -161,14 +166,40 @@ def load_data(config: object):
     # TODO: Maybe use this tranform step?
     # transform = T.SamplePoints(config.sample_points)
 
+    no_points_sampled = 2048
+    radius_threshold = 0.02
+
+    # Load train_dataset first to get first sample and determine OneHotDegree number
     train_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'],
         categories = config['categories'],
         transform=T.Compose([
-                                T.FixedPoints(2048,replace = False, allow_duplicates = True),
-                                T.RadiusGraph(0.01),
+                                T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True),
+                                T.RadiusGraph(radius_threshold), # TODO: Maybe use k nearest neighbors? 
+                                T.Distance()
+                            ]), #T.OneHotDegree(50) just crashes if number too low  ## TODO: Check for highest degree on training data and use that
+        split = "train"
+    )
+
+    # compute for in_degree = 0 (default)
+    # so degree for outgoing connections
+    
+    # max degree of first sample
+    max_degree = degree(train_dataset[0]['edge_index'][0]).max()
+    
+    # round to 50, with minimum of 50 ... It should be okay, if number is a little bit higher than actual degree.
+    # Since we base the degree on only 1 sample, better to have some space to work with
+    # TODO: redefine onehotdegree function to actually use determine highest degree first? 
+    max_degree = max_degree - max_degree % 50 if max_degree > 50 else 50
+
+    train_dataset = ShapeNet(
+        root = config['savedir'] + "/" + config['model_name'],
+        categories = config['categories'],
+        transform=T.Compose([
+                                T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True),
+                                T.RadiusGraph(radius_threshold), # TODO: Maybe use k nearest neighbors? 
                                 T.Distance(),
-                                T.OneHotDegree(50) 
+                                T.OneHotDegree(max_degree) 
                             ]), #T.OneHotDegree(50) just crashes if number too low  ## TODO: Check for highest degree on training data and use that
         split = "train"
     )
@@ -185,10 +216,10 @@ def load_data(config: object):
             root = config['savedir'] + "/" + config['model_name'],
             categories = config['categories'],
             transform=T.Compose([
-                                    T.FixedPoints(2048,replace = False, allow_duplicates = True),
-                                    T.RadiusGraph(0.01),
+                                    T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True),
+                                    T.RadiusGraph(radius_threshold),
                                     T.Distance(),
-                                    T.OneHotDegree(50) 
+                                    T.OneHotDegree(max_degree) 
                                         ]),
             split = "val"
         )
@@ -220,10 +251,10 @@ def load_data(config: object):
         root = config['savedir'] + "/" + config['model_name'] + "_test",
         categories = config['categories'],
         transform=T.Compose([
-                                    T.FixedPoints(2048,replace = False, allow_duplicates = True), 
-                                    T.RadiusGraph(0.01),
+                                    T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True), 
+                                    T.RadiusGraph(radius_threshold),
                                     T.Distance(),
-                                    T.OneHotDegree(50) 
+                                    T.OneHotDegree(max_degree) 
                                 ]), #T.OneHotDegree(50) just crashes if number too low  ## TODO: Check for highest degree on training data and use that
         split = "test"
     )
@@ -311,7 +342,7 @@ def objective(trial):
     config.batch_size = trial.suggest_int('batch_size', low=32, high=128, step=32)
     config.num_workers = 1
     config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
-    config.epochs = trial.suggest_int('epoch_count', low=30, high=90, step=30)
+    config.epochs = trial.suggest_int('epoch_count', low=25, high=75, step=25)
     config.embed_dim=trial.suggest_int('embed_dim', low=64, high=128, step=64)
     config.hidden_layers = trial.suggest_int("num_layers", 1, 4)
     config.conv_layer = trial.suggest_categorical('conv_layer', ['SAGEConv', 'GATConv', 'GCNConv'])
@@ -322,6 +353,7 @@ def objective(trial):
     config.norm_layer = trial.suggest_categorical("norm_layer", ["None", "Batch", "Instance"])
     config.vis_sample_size = 3
     config.wandb_run_name = wandb_run_name
+    config.use_drive_storage = True
 
     seed_everything(config.seed)
 
@@ -376,7 +408,32 @@ def objective(trial):
 def train(FLAGS):
 
     if FLAGS.train_hyperparams == "True":
-        study = optuna.create_study(sampler=TPESampler(), directions=["minimize"])
+
+        if FLAGS.existing_study != 'None':
+            study_name = FLAGS.existing_study    
+        else:            
+            now = datetime.datetime.now()
+            date_time = now.strftime("%Y_%m_%d_%H_%M")
+
+            study_name = "pointGCN_study_" + date_time
+
+
+        if FLAGS.use_drive_storage == "True":
+            # Add stream handler of stdout to show the messages
+            optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
+            study_dir = os.path.join('drive', 'MyDrive', 'PointGCN', 'logs')
+            study_path = os.path.join(study_dir, study_name)
+            storage_name = "sqlite:///{}.db".format(study_path)
+        else:
+            storage_name = None
+
+        study = optuna.create_study(
+                study_name=study_name, 
+                storage=storage_name, 
+                sampler=TPESampler(), 
+                directions=["minimize"]
+            )
+        
         study.optimize(objective, n_trials=20)
     else:
 
@@ -692,6 +749,8 @@ if __name__ == "__main__":
         parser.add_argument('--dataset', default='shapenet', help='Dataset to be used for prediction [default: modelnet40]')
         parser.add_argument('--colab', default='False', help='Code is executed in Google colab [default: False]')
         parser.add_argument('--train_hyperparams', default='False', help='Hyper param tuning [default: False]')
+        parser.add_argument('--use_drive_storage', default='False', help='Store results in connected Google Drive [default: False]')
+        parser.add_argument('--existing_study', default='None', help='existing study can be passed to continue a started study that has not been finished [default: None]')
         # FLAGS = parser.parse_args()
 
     FLAGS = parser.parse_args()
