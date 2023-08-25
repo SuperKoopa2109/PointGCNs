@@ -185,12 +185,15 @@ def load_data(config: object):
     # so degree for outgoing connections
     
     # max degree of first sample
-    max_degree = degree(train_dataset[0]['edge_index'][0]).max()
+    max_degree = 0
+    for i in range(5):
+        new_degree = degree(train_dataset[0]['edge_index'][0]).max()
+        if new_degree > max_degree:
+            max_degree = new_degree
     
-    # round to 50, with minimum of 50 ... It should be okay, if number is a little bit higher than actual degree.
-    # Since we base the degree on only 1 sample, better to have some space to work with
-    # TODO: redefine onehotdegree function to actually use determine highest degree first? 
-    max_degree = max_degree - max_degree % 50 if max_degree > 50 else 50
+    # round to 100, with minimum of 100 ... It should be okay, if number is a little bit higher than actual degree.
+    # Since we base the degree on only 5 samples, better to have some space to work with
+    max_degree = max_degree - max_degree % 100 if max_degree > 100 else 100
 
     train_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'],
@@ -261,7 +264,7 @@ def load_data(config: object):
         
     test_loader = DataLoader(
         test_dataset,
-        batch_size=64,
+        batch_size=32,
         shuffle=True
     #     num_workers=config['num_workers']
     )
@@ -342,9 +345,9 @@ def objective(trial):
     config.batch_size = trial.suggest_int('batch_size', low=32, high=128, step=32)
     config.num_workers = 1
     config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
-    config.epochs = trial.suggest_int('epoch_count', low=25, high=75, step=25)
+    config.epochs = trial.suggest_int('epoch_count', low=20, high=60, step=20)
     config.embed_dim=trial.suggest_int('embed_dim', low=64, high=128, step=64)
-    config.hidden_layers = trial.suggest_int("num_layers", 1, 4)
+    config.hidden_layers = trial.suggest_int("num_layers", 2, 5)
     config.conv_layer = trial.suggest_categorical('conv_layer', ['SAGEConv', 'GATConv', 'GCNConv'])
     config.hidden_dim=trial.suggest_int('hidden_dim', low=128, high=256, step=128)
     config.learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
