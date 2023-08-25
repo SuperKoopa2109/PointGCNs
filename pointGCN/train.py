@@ -200,7 +200,7 @@ def load_data(config: object):
     train_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'],
         categories = config['categories'],
-        transform=T.Compose([
+        pre_transform=T.Compose([
                                 T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True),
                                 T.RadiusGraph(radius_threshold), # TODO: Maybe use k nearest neighbors? 
                                 T.Distance(),
@@ -220,7 +220,7 @@ def load_data(config: object):
     val_dataset = ShapeNet(
             root = config['savedir'] + "/" + config['model_name'],
             categories = config['categories'],
-            transform=T.Compose([
+            pre_transform=T.Compose([
                                     T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True),
                                     T.RadiusGraph(radius_threshold),
                                     T.Distance(),
@@ -255,7 +255,7 @@ def load_data(config: object):
     test_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'] + "_test",
         categories = config['categories'],
-        transform=T.Compose([
+        pre_transform=T.Compose([
                                     T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True), 
                                     T.RadiusGraph(radius_threshold),
                                     T.Distance(),
