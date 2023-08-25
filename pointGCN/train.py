@@ -169,31 +169,33 @@ def load_data(config: object):
     no_points_sampled = 2048
     radius_threshold = 0.02
 
-    # Load train_dataset first to get first sample and determine OneHotDegree number
-    train_dataset = ShapeNet(
-        root = config['savedir'] + "/" + config['model_name'],
-        categories = config['categories'],
-        transform=T.Compose([
-                                T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True),
-                                T.RadiusGraph(radius_threshold), # TODO: Maybe use k nearest neighbors? 
-                                T.Distance()
-                            ]), #T.OneHotDegree(50) just crashes if number too low  ## TODO: Check for highest degree on training data and use that
-        split = "train"
-    )
+    # # Load train_dataset first to get first sample and determine OneHotDegree number
+    # train_dataset = ShapeNet(
+    #     root = config['savedir'] + "/" + config['model_name'],
+    #     categories = config['categories'],
+    #     transform=T.Compose([
+    #                             T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True),
+    #                             T.RadiusGraph(radius_threshold), # TODO: Maybe use k nearest neighbors? 
+    #                             T.Distance()
+    #                         ]), #T.OneHotDegree(50) just crashes if number too low  ## TODO: Check for highest degree on training data and use that
+    #     split = "train"
+    # )
 
-    # compute for in_degree = 0 (default)
-    # so degree for outgoing connections
+    # # compute for in_degree = 0 (default)
+    # # so degree for outgoing connections
     
-    # max degree of first sample
-    max_degree = 0
-    for i in range(5):
-        new_degree = degree(train_dataset[0]['edge_index'][0]).max()
-        if new_degree > max_degree:
-            max_degree = new_degree
+    # # max degree of first sample
+    # max_degree = 0
+    # for i in range(5):
+    #     new_degree = degree(train_dataset[0]['edge_index'][0]).max()
+    #     if new_degree > max_degree:
+    #         max_degree = new_degree
     
     # round to 100, with minimum of 100 ... It should be okay, if number is a little bit higher than actual degree.
     # Since we base the degree on only 5 samples, better to have some space to work with
-    max_degree = max_degree - max_degree % 100 if max_degree > 100 else 100
+    # max_degree = max_degree - max_degree % 100 if max_degree > 100 else 100
+
+    max_degree = 100
 
     train_dataset = ShapeNet(
         root = config['savedir'] + "/" + config['model_name'],
