@@ -253,7 +253,7 @@ def load_data(config: object):
     # )
 
     test_dataset = ShapeNet(
-        root = config['savedir'] + "/" + config['model_name'] + "_test",
+        root = config['savedir'] + "/" + config['model_name'],
         categories = config['categories'],
         pre_transform=T.Compose([
                                     T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True), 
@@ -353,7 +353,7 @@ def objective(trial):
     config.conv_layer = trial.suggest_categorical('conv_layer', ['SAGEConv', 'GATConv', 'GCNConv'])
     config.hidden_dim=trial.suggest_int('hidden_dim', low=128, high=256, step=128)
     config.learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
-    config.drop_rate = trial.suggest_float("dropout_rate", 0.0, 1.0)
+    config.drop_rate = trial.suggest_float("dropout_rate", 0.0, 0.4)
     config.negative_slope = trial.suggest_float("negative_slope", 0.0, 0.2)
     config.norm_layer = trial.suggest_categorical("norm_layer", ["None", "Batch", "Instance"])
     config.vis_sample_size = 3
