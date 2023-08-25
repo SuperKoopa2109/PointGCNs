@@ -342,7 +342,7 @@ def objective(trial):
     config.categories = "Airplane"
     config.savedir = "data"
     config.logdir = LOG_DIR
-    config.batch_size = trial.suggest_int('batch_size', low=32, high=128, step=32)
+    config.batch_size = trial.suggest_int('batch_size', low=16, high=32, step=16)
     config.num_workers = 1
     config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
     config.epochs = trial.suggest_int('epoch_count', low=20, high=60, step=20)
