@@ -321,7 +321,7 @@ def objective(trial):
     modulename = 'wandb'
     if is_imported(modulename):
         wandb.init(
-            project=wandb_project, 
+            project=wandb_project,
             #name=wandb_run_name, 
             job_type="baseline-train"
             )
@@ -408,6 +408,8 @@ def objective(trial):
         train_step(epoch, model, optimizer, loss, train_loader, device, config)
         val_step(epoch, model, loss, val_loader, device, config)
         visualize_evaluation(epoch, model, table, vis_loader, config, device)
+
+    wandb.finish()
 
 
 def train(FLAGS):
