@@ -409,7 +409,9 @@ def objective(trial):
         val_step(epoch, model, loss, val_loader, device, config)
         visualize_evaluation(epoch, model, table, vis_loader, config, device)
 
-    wandb.finish()
+    if is_imported('wandb'):
+            wandb.log({"PredClass_vs_TrueClass": table})
+            wandb.finish()
 
 
 def train(FLAGS):
