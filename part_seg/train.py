@@ -74,8 +74,11 @@ if param_config.get_value('system', 'dataset') != 'shapenet':
     fin.close()
 
     all_cats = json.load(open(os.path.join(hdf5_data_dir, 'overallid_to_catid_partid.json'), 'r'))
-NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
-NUM_PART_CATS = len(all_cats)
+    NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
+    NUM_PART_CATS = len(all_cats)
+else:
+    NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
+    NUM_PART_CATS = 4 # only four parts for airplane !!!
 
 print('#### Batch Size: {0}'.format(batch_size))
 print('#### Point Number: {0}'.format(point_num))
