@@ -63,9 +63,7 @@ if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
 
-if param_config.get_value('system', 'dataset') == 'ShapeNet':
-    pass
-else:
+if param_config.get_value('system', 'dataset') != 'shapenet':
     color_map_file = os.path.join(hdf5_data_dir, 'part_color_mapping.json')
     color_map = json.load(open(color_map_file, 'r'))
 
