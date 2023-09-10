@@ -4,7 +4,8 @@ import numpy as np
 import h5py
 
 import torch_geometric.transforms as T
-from torch_geometric.datasets import ShapeNet #ModelNet
+#from torch_geometric.datasets import ShapeNet #ModelNet
+from part_seg.dataset.shapenet_loader import ShapeNet
 from torch_geometric.loader import DataLoader
 
 from param_config import param_config

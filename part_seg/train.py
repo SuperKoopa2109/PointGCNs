@@ -62,16 +62,20 @@ output_dir = FLAGS.output_dir
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
-color_map_file = os.path.join(hdf5_data_dir, 'part_color_mapping.json')
-color_map = json.load(open(color_map_file, 'r'))
 
-all_obj_cats_file = os.path.join(hdf5_data_dir, 'all_object_categories.txt')
-fin = open(all_obj_cats_file, 'r')
-lines = [line.rstrip() for line in fin.readlines()]
-all_obj_cats = [(line.split()[0], line.split()[1]) for line in lines]
-fin.close()
+if param_config.get_value('system', 'dataset') == 'ShapeNet':
+    pass
+else:
+    color_map_file = os.path.join(hdf5_data_dir, 'part_color_mapping.json')
+    color_map = json.load(open(color_map_file, 'r'))
 
-all_cats = json.load(open(os.path.join(hdf5_data_dir, 'overallid_to_catid_partid.json'), 'r'))
+    all_obj_cats_file = os.path.join(hdf5_data_dir, 'all_object_categories.txt')
+    fin = open(all_obj_cats_file, 'r')
+    lines = [line.rstrip() for line in fin.readlines()]
+    all_obj_cats = [(line.split()[0], line.split()[1]) for line in lines]
+    fin.close()
+
+    all_cats = json.load(open(os.path.join(hdf5_data_dir, 'overallid_to_catid_partid.json'), 'r'))
 NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
 NUM_PART_CATS = len(all_cats)
 
