@@ -77,8 +77,14 @@ if param_config.get_value('system', 'dataset') != 'shapenet':
     NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
     NUM_PART_CATS = len(all_cats)
 else:
+    color_map_file = os.path.join('util', 'part_color_mapping.json')
+    color_map = json.load(open(color_map_file, 'r'))
+
+
+
     NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
     NUM_PART_CATS = 4 # only four parts for airplane !!!
+    all_obj_cats = [('Airplane', '02691156')] # only for airplane
 
 print('#### Batch Size: {0}'.format(batch_size))
 print('#### Point Number: {0}'.format(point_num))
