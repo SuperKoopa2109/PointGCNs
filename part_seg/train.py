@@ -77,7 +77,7 @@ if param_config.get_value('system', 'dataset') != 'shapenet':
     NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
     NUM_PART_CATS = len(all_cats)
 else:
-    color_map_file = os.path.join('util', 'part_color_mapping.json')
+    color_map_file = os.path.join(BASE_DIR, 'util', 'part_color_mapping.json')
     color_map = json.load(open(color_map_file, 'r'))
 
 
