@@ -7,6 +7,8 @@ import json
 import os
 import sys
 
+import wandb
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.dirname(BASE_DIR))
@@ -29,11 +31,15 @@ parser.add_argument('--output_dir', type=str, default='train_results', help='Dir
 parser.add_argument('--wd', type=float, default=0, help='Weight Decay [Default: 0.0]')
 parser.add_argument('--dataset', default='modelnet40', help='Dataset to be used for prediction [default: modelnet40]')
 parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
+parser.add_argument('--use_drive', default='False', help='results are stored in google drive [default: False]')
+parser.add_argument('--use_wandb', default='False', help='results are stored in weights and biases [default: False]')
 FLAGS = parser.parse_args()
 
 print(f"*******BASE_DIR: {param_config.get_value('paths', 'BASE_DIR')}*******")
 param_config.set_value('system', 'dataset', FLAGS.dataset)
 param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
+param_config.set_value('system', 'use_drive', FLAGS.use_drive)
+param_config.set_value('system', 'use_wandb', FLAGS.use_wandb)
 param_config.save()
 
 import provider
@@ -229,6 +235,32 @@ def train():
         # write logs to the disk
         flog = open(os.path.join(LOG_STORAGE_PATH, 'log.txt'), 'w')
 
+        if param_config.get_value('system', 'use_wandb') == 'True':
+
+            wandb_project = "pointGCNs"
+            wandb_run_name = "playground/shapnet/1"
+
+            wandb.init(
+                project=wandb_project,
+                #name=wandb_run_name, 
+                job_type="baseline-train"
+                )
+
+            wandb_run_name = wandb.run.name
+
+            # Set experiment configs to be synced with wandb
+            wandb_config = wandb.config
+
+            wandb_config.batch_size = 512
+
+            table = wandb.Table(
+                columns=[
+                    "Epoch",
+                    "Ground-Truth",
+                    "Predicted-Classes"
+                ]
+            )
+
         def train_one_epoch(train_file_idx, epoch_num):
             is_training = True
 
@@ -314,6 +346,8 @@ def train():
                 printout(flog, '\t\tTraining Label Accuracy: %f' % total_label_acc)
                 printout(flog, '\t\tTraining Seg Mean_loss: %f' % total_seg_loss)
                 printout(flog, '\t\tTraining Seg Accuracy: %f' % total_seg_acc)
+
+                return (total_loss, total_label_loss, total_label_acc, total_seg_loss, total_seg_acc)
 
         def eval_one_epoch(epoch_num):
             is_training = False
@@ -409,12 +443,23 @@ def train():
                     printout(flog, '\t\tCategory %s Label Accuracy: %f' % (all_obj_cats[cat_idx][0], total_label_acc_per_cat[cat_idx]/total_seen_per_cat[cat_idx]))
                     printout(flog, '\t\tCategory %s Seg Accuracy: %f' % (all_obj_cats[cat_idx][0], total_seg_acc_per_cat[cat_idx]/total_seen_per_cat[cat_idx]))
 
+            return (total_loss, total_label_loss, total_label_acc, total_seg_loss, total_seg_acc)
+
         if not os.path.exists(MODEL_STORAGE_PATH):
             os.mkdir(MODEL_STORAGE_PATH)
 
         for epoch in range(TRAINING_EPOCHES):
             printout(flog, '\n<<< Testing on the test dataset ...')
-            eval_one_epoch(epoch)
+            total_loss, total_label_loss, total_label_acc, total_seg_loss, total_seg_acc = eval_one_epoch(epoch)
+
+            if param_config.get_value('system', 'use_wandb') == 'True':
+                wandb.log({
+                "Eval/Total_Loss": total_loss,
+                "Eval/Total_Label_Loss": total_label_loss,
+                "Eval/Total_Label_Accuracy": total_label_acc,
+                "Eval/Total_Seg_Loss": total_seg_loss,
+                "Eval/Total_Seg_Accuracy": total_seg_acc
+                })
 
             printout(flog, '\n>>> Training for the epoch %d/%d ...' % (epoch, TRAINING_EPOCHES))
 
@@ -424,7 +469,16 @@ def train():
                 train_file_idx = np.arange(0, len(train_file_list))
                 np.random.shuffle(train_file_idx)
 
-            train_one_epoch(train_file_idx, epoch)
+            total_loss, total_label_loss, total_label_acc, total_seg_loss, total_seg_acc = train_one_epoch(train_file_idx, epoch)
+
+            if param_config.get_value('system', 'use_wandb') == 'True':
+                wandb.log({
+                "Train/Total_Loss": total_loss,
+                "Train/Total_Label_Loss": total_label_loss,
+                "Train/Total_Label_Accuracy": total_label_acc,
+                "Train/Total_Seg_Loss": total_seg_loss,
+                "Train/Total_Seg_Accuracy": total_seg_acc
+                })
 
             if (epoch+1) % 10 == 0:
                 cp_filename = saver.save(sess, os.path.join(MODEL_STORAGE_PATH, 'epoch_' + str(epoch+1)+'.ckpt'))
@@ -433,6 +487,10 @@ def train():
             flog.flush()
 
         flog.close()
+
+        if param_config.get_value('system', 'use_wandb') == 'True':
+            wandb.log({"PredClass_vs_TrueClass": table})
+            wandb.finish()
 
 if __name__=='__main__':
     train()
