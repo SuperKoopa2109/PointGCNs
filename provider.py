@@ -168,6 +168,9 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                 seg[i - start_idx] = seg_batch
                 
                 if visualize:
+                    print(f'pos_batch {pos_batch}')
+                    print(f'pos.shape {pos.shape}')
+                    print(f'pos_batch.shape {pos_batch.shape}')
                     pos[i-start_idx] = pos_batch
 
                 if visualize:
@@ -199,6 +202,9 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                 seg[i - start_idx] = seg_batch
 
                 if visualize:
+                    print(f'pos_batch {pos_batch}')
+                    print(f'pos.shape {pos.shape}')
+                    print(f'pos_batch.shape {pos_batch.shape}')
                     pos[i-start_idx] = pos_batch
 
                 if visualize:
