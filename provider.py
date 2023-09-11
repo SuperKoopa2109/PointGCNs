@@ -166,8 +166,12 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                 data[i - start_idx] = data_batch
                 label[i - start_idx] = label_batch
                 seg[i - start_idx] = seg_batch
+                
                 if visualize:
                     pos[i-start_idx] = pos_batch
+
+                if visualize:
+                    return (data, label, seg, pos)
         else:
             for i in range(start_idx, min(start_idx + h5_filename, len(test_dataset) - 1 )):
                 data_batch, label_batch, seg_batch = test_dataset[i]['x'].numpy(), test_dataset[i]['category'].numpy(), test_dataset[i]['y'].numpy()
