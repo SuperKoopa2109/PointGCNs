@@ -139,7 +139,7 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
         data = np.zeros([h5_filename, max_points, 3])
         label = np.zeros([h5_filename], dtype=np.int32)
         seg = np.zeros([h5_filename, max_points], dtype=np.int32)
-        pos = np.zeros([3, max_points], dtype=np.int32) # 3 dims for x,y,z coordinates
+        pos = np.zeros([h5_filename, max_points, 3], dtype=np.int32) # 3 dims for x,y,z coordinates
         
         if is_training:
             for i in range(start_idx, min(start_idx + h5_filename, len(train_dataset) - 1 )):
@@ -168,9 +168,9 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                 seg[i - start_idx] = seg_batch
                 
                 if visualize:
-                    print(f'pos_batch {pos_batch}')
-                    print(f'pos.shape {pos.shape}')
-                    print(f'pos_batch.shape {pos_batch.shape}')
+                    # print(f'pos_batch {pos_batch}')
+                    # print(f'pos.shape {pos.shape}')
+                    # print(f'pos_batch.shape {pos_batch.shape}')
                     pos[i-start_idx] = pos_batch
 
                 if visualize:
@@ -202,9 +202,9 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                 seg[i - start_idx] = seg_batch
 
                 if visualize:
-                    print(f'pos_batch {pos_batch}')
-                    print(f'pos.shape {pos.shape}')
-                    print(f'pos_batch.shape {pos_batch.shape}')
+                    # print(f'pos_batch {pos_batch}')
+                    # print(f'pos.shape {pos.shape}')
+                    # print(f'pos_batch.shape {pos_batch.shape}')
                     pos[i-start_idx] = pos_batch
 
                 if visualize:
