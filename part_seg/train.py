@@ -479,7 +479,7 @@ def train():
                     # only load 1 graph at once
                     cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(1, is_training=False, start_idx = i, visualize=True)
 
-                cur_labels = np.squeeze(cur_labels)
+                cur_labels = cur_labels.reshape([1,-1]) #np.squeeze(cur_labels)
 
                 cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
 
