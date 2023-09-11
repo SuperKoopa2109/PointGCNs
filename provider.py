@@ -128,7 +128,7 @@ def load_h5(h5_filename):
 def loadDataFile(filename):
     return load_h5(filename)
 
-def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start_idx=0):
+def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start_idx=0, visualize=False):
     # h5_filename can also be used as a batch_size for shapenet dataset from pytorch geometric
     # Load data for 
     if param_config.get_value('system', 'dataset') == 'shapenet': 
@@ -139,44 +139,66 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
         data = np.zeros([h5_filename, max_points, 3])
         label = np.zeros([h5_filename], dtype=np.int32)
         seg = np.zeros([h5_filename, max_points], dtype=np.int32)
-
-        # TODO: what if pointcloud has less than max points? -> currently data is disregarded. Might end up in not having same length for batch!!
-        small_pointclouds = 0
+        pos = np.zeros([h5_filename, max_points], dtype=np.int32)
         
         if is_training:
             for i in range(start_idx, min(start_idx + h5_filename, len(train_dataset) - 1 )):
                 data_batch, label_batch, seg_batch = train_dataset[i]['x'].numpy(), train_dataset[i]['category'].numpy(), train_dataset[i]['y'].numpy()
+                if visualize:
+                    pos_batch = train_dataset[i]['pos']
                 if data_batch.shape[0] > max_points:
                     data_batch = data_batch[:max_points]
                     seg_batch = seg_batch[:max_points]
+                    if visualize:
+                        pos_batch = pos_batch[:max_points]
                 elif data_batch.shape[0] < max_points:
                     while data_batch.shape[0] < max_points:
                         # if pointcloud does not contain enough points, add a random duplicate -> should not be too bad, as there are very few cases like this; also not optimal though TODO
                         rnd_idx = np.random.randint(h5_filename)
                         data_batch, label_batch, seg_batch = train_dataset[rnd_idx]['x'].numpy(), train_dataset[rnd_idx]['category'].numpy(), train_dataset[rnd_idx]['y'].numpy()
+                        if visualize:
+                            pos_batch = train_dataset[i]['pos']
                         if data_batch.shape[0] > max_points:
                             data_batch = data_batch[:max_points]
                             seg_batch = seg_batch[:max_points]
+                            if visualize:
+                                pos_batch = pos_batch[:max_points]
                 data[i - start_idx] = data_batch
                 label[i - start_idx] = label_batch
                 seg[i - start_idx] = seg_batch
+                if visualize:
+                    pos[i-start_idx] = pos_batch
         else:
             for i in range(start_idx, min(start_idx + h5_filename, len(test_dataset) - 1 )):
                 data_batch, label_batch, seg_batch = test_dataset[i]['x'].numpy(), test_dataset[i]['category'].numpy(), test_dataset[i]['y'].numpy()
+                if visualize:
+                    pos_batch = train_dataset[i]['pos']
                 if data_batch.shape[0] > max_points:
                     data_batch = data_batch[:max_points]
                     seg_batch = seg_batch[:max_points]
+                    if visualize:
+                        pos_batch = pos_batch[:max_points]
                 elif data_batch.shape[0] < max_points:
                     while data_batch.shape[0] < max_points:
                         # if pointcloud does not contain enough points, add a random duplicate -> should not be too bad, as there are very few cases like this; also not optimal though TODO
                         rnd_idx = np.random.randint(h5_filename)
                         data_batch, label_batch, seg_batch = test_dataset[rnd_idx]['x'].numpy(), test_dataset[rnd_idx]['category'].numpy(), test_dataset[rnd_idx]['y'].numpy()
+                        if visualize:
+                            pos_batch = train_dataset[i]['pos']
                         if data_batch.shape[0] > max_points:
                             data_batch = data_batch[:max_points]
                             seg_batch = seg_batch[:max_points]
+                            if visualize:
+                                pos_batch = pos_batch[:max_points]
                 data[i - start_idx] = data_batch
                 label[i - start_idx] = label_batch
                 seg[i - start_idx] = seg_batch
+
+                if visualize:
+                    pos[i-start_idx] = pos_batch
+
+                if visualize:
+                    return (data, label, seg, pos)
             
             
 
