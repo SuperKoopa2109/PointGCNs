@@ -242,5 +242,5 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
     return (data, label, seg)
 
 
-def loadDataFile_with_seg(filename, is_training=True, max_points=2048, start_idx=0):
-    return load_h5_data_label_seg(filename, is_training=is_training, max_points=max_points, start_idx=start_idx)
+def loadDataFile_with_seg(filename, is_training=True, max_points=2048, start_idx=0, visualize=False):
+    return load_h5_data_label_seg(filename, is_training=is_training, max_points=max_points, start_idx=start_idx, visualize=False)
