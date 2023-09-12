@@ -407,10 +407,10 @@ def train():
                             is_training_ph: is_training, 
                             }
 
-                    labels = ['labels_ph', 'input_label_ph', 'seg_ph']
-                    for idx, val in enumerate(feed_dict.values()):
-                        if idx > 0 and idx < 4:
-                            print(labels[idx - 1], val)
+                    # labels = ['labels_ph', 'input_label_ph', 'seg_ph']
+                    # for idx, val in enumerate(feed_dict.values()):
+                    #     if idx > 0 and idx < 4:
+                    #         print(labels[idx - 1], val)
 
                     loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
                             per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
@@ -486,12 +486,12 @@ def train():
 
                 for i in range(vis_no):
 
-                    begidx = i * batch_size
-                    endidx = (i + 1) * batch_size
+                    begidx = 0
+                    endidx = batch_size
 
                     
                     # only load 1 graph at once
-                    cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(batch_size, is_training=False, start_idx = i * batch_size, visualize=True)
+                    cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(32, is_training=False, start_idx = i * 32, visualize=True)
 
                     #cur_labels = cur_labels.reshape([1,-1])
                     np.squeeze(cur_labels)
@@ -511,10 +511,10 @@ def train():
                         is_training_ph: is_training, 
                         }
                     
-                    labels = ['labels_ph', 'input_label_ph', 'seg_ph']
-                    for idx, val in enumerate(feed_dict.values()):
-                        if idx > 0 and idx < 4:
-                            print(labels[idx - 1], val)
+                    # labels = ['labels_ph', 'input_label_ph', 'seg_ph']
+                    # for idx, val in enumerate(feed_dict.values()):
+                    #     if idx > 0 and idx < 4:
+                    #         print(labels[idx - 1], val)
 
                     # feed_dict = {
                     #         pointclouds_ph: cur_data, 
