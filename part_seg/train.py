@@ -457,61 +457,76 @@ def train():
             return (total_loss, total_label_loss, total_label_acc, total_seg_loss, total_seg_acc)
 
         def visualize_one_epoch(epoch, table, vis_no = 3):
-            is_training = False
+            if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
+                is_training = False
 
-            total_loss = 0.0
-            total_label_loss = 0.0
-            total_seg_loss = 0.0
-            total_label_acc = 0.0
-            total_seg_acc = 0.0
-            total_seen = 0
+                total_loss = 0.0
+                total_label_loss = 0.0
+                total_seg_loss = 0.0
+                total_label_acc = 0.0
+                total_seg_acc = 0.0
+                total_seen = 0
 
-            total_label_acc_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.float32)
-            total_seg_acc_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.float32)
-            total_seen_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.int32)
+                total_label_acc_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.float32)
+                total_seg_acc_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.float32)
+                total_seen_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.int32)
 
-            predictions = []
-            ground_truths = []
+                predictions = []
+                ground_truths = []
 
-            for i in range(vis_no):
+                for i in range(vis_no):
 
-                if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
+                    begidx = i * batch_size
+                    endidx = (i + 1) * batch_size
+
+                    
                     # only load 1 graph at once
-                    cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(1, is_training=False, start_idx = i, visualize=True)
+                    cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(batch_size, is_training=False, start_idx = i * batch_size, visualize=True)
 
-                cur_labels = cur_labels.reshape([1,-1]) #np.squeeze(cur_labels)
+                    #cur_labels = cur_labels.reshape([1,-1])
+                    np.squeeze(cur_labels)
 
-                cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
+                    cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
 
-                feed_dict = {
-                        pointclouds_ph: cur_data, 
-                        labels_ph: cur_labels, 
-                        input_label_ph: cur_labels_one_hot, 
-                        seg_ph: cur_seg,
+                    feed_dict = {
+                        pointclouds_ph: cur_data[begidx: endidx, ...], 
+                        labels_ph: cur_labels[begidx: endidx, ...], 
+                        input_label_ph: cur_labels_one_hot[begidx: endidx, ...], 
+                        seg_ph: cur_seg[begidx: endidx, ...],
                         is_training_ph: is_training, 
                         }
 
-                loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
-                        per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
-                        = sess.run([loss, label_loss, seg_loss, per_instance_label_loss, \
-                        per_instance_seg_loss, labels_pred, seg_pred, per_instance_seg_pred_res], \
-                        feed_dict=feed_dict)
-                
-                predictions.append(
-                    wandb.Object3D(np.hstack([cur_pos, pred_seg_res.reshape(-1,1)]))
-                )
-                ground_truths.append(
-                    wandb.Object3D(np.hstack([cur_pos, cur_seg.reshape(-1, 1)]))
-                )
+                    # feed_dict = {
+                    #         pointclouds_ph: cur_data, 
+                    #         labels_ph: cur_labels, 
+                    #         input_label_ph: cur_labels_one_hot, 
+                    #         seg_ph: cur_seg,
+                    #         is_training_ph: is_training, 
+                    #         }
 
-                
+                    loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
+                            per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
+                            = sess.run([loss, label_loss, seg_loss, per_instance_label_loss, \
+                            per_instance_seg_loss, labels_pred, seg_pred, per_instance_seg_pred_res], \
+                            feed_dict=feed_dict)
+                    
+                    predictions.append(
+                        wandb.Object3D(np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)]))
+                    )
+                    ground_truths.append(
+                        wandb.Object3D(np.hstack([cur_pos[0], cur_seg[0].reshape(-1, 1)]))
+                    )
 
-            # Store 3D models every 5 epochs
-            if ((epoch + 1) % 1 == 0):
-                table.add_data(
-                    epoch, ground_truths, predictions
-                )
-            return table
+                    
+
+                # Store 3D models every 5 epochs
+                if ((epoch + 1) % 1 == 0):
+                    table.add_data(
+                        epoch, ground_truths, predictions
+                    )
+                return table
+            else:
+                return None
 
         if not os.path.exists(MODEL_STORAGE_PATH):
             os.mkdir(MODEL_STORAGE_PATH)
