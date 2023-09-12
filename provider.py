@@ -145,7 +145,7 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
             for i in range(start_idx, min(start_idx + h5_filename, len(train_dataset) - 1 )):
                 data_batch, label_batch, seg_batch = train_dataset[i]['x'].numpy(), train_dataset[i]['category'].numpy(), train_dataset[i]['y'].numpy()
                 if visualize:
-                    pos_batch = train_dataset[i]['pos']
+                    pos_batch = train_dataset[i]['pos'].numpy()
                 if data_batch.shape[0] > max_points:
                     data_batch = data_batch[:max_points]
                     seg_batch = seg_batch[:max_points]
@@ -157,7 +157,7 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                         rnd_idx = np.random.randint(h5_filename)
                         data_batch, label_batch, seg_batch = train_dataset[rnd_idx]['x'].numpy(), train_dataset[rnd_idx]['category'].numpy(), train_dataset[rnd_idx]['y'].numpy()
                         if visualize:
-                            pos_batch = train_dataset[i]['pos']
+                            pos_batch = train_dataset[i]['pos'].numpy()
                         if data_batch.shape[0] > max_points:
                             data_batch = data_batch[:max_points]
                             seg_batch = seg_batch[:max_points]
@@ -184,6 +184,8 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                     data_batch = data_batch[:max_points]
                     seg_batch = seg_batch[:max_points]
                     if visualize:
+                        if i < 1:
+                            print(f'pos_batch {pos_batch}')
                         pos_batch = pos_batch[:max_points]
                 elif data_batch.shape[0] < max_points:
                     while data_batch.shape[0] < max_points:
