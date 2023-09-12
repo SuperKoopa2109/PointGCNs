@@ -184,8 +184,6 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                     data_batch = data_batch[:max_points]
                     seg_batch = seg_batch[:max_points]
                     if visualize:
-                        if i < 1:
-                            print(f'pos_batch {pos_batch}')
                         pos_batch = pos_batch[:max_points]
                 elif data_batch.shape[0] < max_points:
                     while data_batch.shape[0] < max_points:
@@ -207,6 +205,7 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
                     # print(f'pos_batch {pos_batch}')
                     # print(f'pos.shape {pos.shape}')
                     # print(f'pos_batch.shape {pos_batch.shape}')
+                    print(f'pos_batch {pos_batch}')
                     pos[i-start_idx] = pos_batch
 
                 if visualize:
