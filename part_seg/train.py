@@ -548,6 +548,8 @@ def train():
                     print(f'pred_seg_res {pred_seg_res}')
                     print(f'pred_seg_res.shape {pred_seg_res.shape}')
                     
+                    print(f'np.hstack() {np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)])}')
+
                     predictions.append(
                         wandb.Object3D(np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)]))
                     )
