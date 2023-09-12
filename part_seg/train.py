@@ -388,10 +388,10 @@ def train():
 
                 cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
 
-                print(f'cur_data.shape {cur_data.shape}')
-                print(f'cur_labels.shape {cur_labels.shape}')
-                print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
-                print(f'seg_ph.shape {seg_ph.shape}')
+                # print(f'cur_data.shape {cur_data.shape}')
+                # print(f'cur_labels.shape {cur_labels.shape}')
+                # print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
+                # print(f'seg_ph.shape {seg_ph.shape}')
 
                 num_data = len(cur_labels)
                 num_batch = num_data // batch_size
@@ -406,6 +406,10 @@ def train():
                             seg_ph: cur_seg[begidx: endidx, ...],
                             is_training_ph: is_training, 
                             }
+
+                    print(f"feed_dict['labels_ph'] {feed_dict['labels_ph'].shape}")
+                    print(f"feed_dict['input_label_ph'] {feed_dict['input_label_ph'].shape}")
+                    print(f"feed_dict['seg_ph'] {feed_dict['seg_ph'].shape}")
 
                     loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
                             per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
@@ -493,10 +497,10 @@ def train():
 
                     cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
 
-                    print(f'cur_data.shape {cur_data.shape}')
-                    print(f'cur_labels.shape {cur_labels.shape}')
-                    print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
-                    print(f'seg_ph.shape {seg_ph.shape}')
+                    # print(f'cur_data.shape {cur_data.shape}')
+                    # print(f'cur_labels.shape {cur_labels.shape}')
+                    # print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
+                    # print(f'seg_ph.shape {seg_ph.shape}')
 
                     feed_dict = {
                         pointclouds_ph: cur_data[begidx: endidx, ...], 
@@ -505,6 +509,10 @@ def train():
                         seg_ph: cur_seg[begidx: endidx, ...],
                         is_training_ph: is_training, 
                         }
+                    
+                    print(f"feed_dict['labels_ph'] {feed_dict['labels_ph'].shape}")
+                    print(f"feed_dict['input_label_ph'] {feed_dict['input_label_ph'].shape}")
+                    print(f"feed_dict['seg_ph'] {feed_dict['seg_ph'].shape}")
 
                     # feed_dict = {
                     #         pointclouds_ph: cur_data, 
