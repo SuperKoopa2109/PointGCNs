@@ -488,6 +488,11 @@ def train():
 
                     cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
 
+                    print(f'cur_data.shape {cur_data.shape}')
+                    print(f'cur_labels.shape {cur_labels.shape}')
+                    print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
+                    print(f'seg_ph.shape {seg_ph.shape}')
+
                     feed_dict = {
                         pointclouds_ph: cur_data[begidx: endidx, ...], 
                         labels_ph: cur_labels[begidx: endidx, ...], 
