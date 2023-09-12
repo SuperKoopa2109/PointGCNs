@@ -541,14 +541,14 @@ def train():
                             = sess.run([labels_pred, seg_pred, per_instance_seg_pred_res], \
                             feed_dict=feed_dict)
 
-                    print(f'label_pred_val {label_pred_val}')
-                    print(f'label_pred_val.shape {label_pred_val.shape}')
-                    print(f'seg_pred_val {seg_pred_val}')
-                    print(f'seg_pred_val.shape {seg_pred_val.shape}')
-                    print(f'pred_seg_res {pred_seg_res}')
-                    print(f'pred_seg_res.shape {pred_seg_res.shape}')
+                    # print(f'label_pred_val {label_pred_val}')
+                    # print(f'label_pred_val.shape {label_pred_val.shape}')
+                    # print(f'seg_pred_val {seg_pred_val}')
+                    # print(f'seg_pred_val.shape {seg_pred_val.shape}')
+                    # print(f'pred_seg_res {pred_seg_res}')
+                    # print(f'pred_seg_res.shape {pred_seg_res.shape}')
                     
-                    print(f'np.hstack() {np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)])}')
+                    # print(f'np.hstack() {np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)])}')
 
                     predictions.append(
                         wandb.Object3D(np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)]))
