@@ -275,6 +275,13 @@ def train():
         def train_one_epoch(train_file_idx, epoch_num):
             is_training = True
 
+            # TODO: REEEMOOOVE                 
+            total_loss = 0.0
+            total_label_loss = 0.0
+            total_seg_loss = 0.0
+            total_label_acc = 0.0
+            total_seg_acc = 0.0
+            return total_loss, total_label_loss, total_label_acc, total_seg_loss, total_seg_acc
 
             # TODO: get file len; think of what should be in one batch/"train_file" and load that from dataset
             for i in range(num_train_file):
@@ -533,6 +540,13 @@ def train():
                     label_pred_val, seg_pred_val, pred_seg_res \
                             = sess.run([labels_pred, seg_pred, per_instance_seg_pred_res], \
                             feed_dict=feed_dict)
+
+                    print(f'label_pred_val {label_pred_val}')
+                    print(f'label_pred_val.shape {label_pred_val.shape}')
+                    print(f'seg_pred_val {seg_pred_val}')
+                    print(f'seg_pred_val.shape {seg_pred_val.shape}')
+                    print(f'pred_seg_res {pred_seg_res}')
+                    print(f'pred_seg_res.shape {pred_seg_res.shape}')
                     
                     predictions.append(
                         wandb.Object3D(np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)]))
