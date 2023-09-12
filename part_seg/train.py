@@ -384,14 +384,14 @@ def train():
 
                     cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_test_filename)
 
+                cur_labels = np.squeeze(cur_labels)
+
+                cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
+
                 print(f'cur_data.shape {cur_data.shape}')
                 print(f'cur_labels.shape {cur_labels.shape}')
                 print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
                 print(f'seg_ph.shape {seg_ph.shape}')
-
-                cur_labels = np.squeeze(cur_labels)
-
-                cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
 
                 num_data = len(cur_labels)
                 num_batch = num_data // batch_size
