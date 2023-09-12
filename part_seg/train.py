@@ -504,10 +504,14 @@ def train():
                     #         is_training_ph: is_training, 
                     #         }
 
-                    loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
-                            per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
-                            = sess.run([loss, label_loss, seg_loss, per_instance_label_loss, \
-                            per_instance_seg_loss, labels_pred, seg_pred, per_instance_seg_pred_res], \
+                    # loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
+                    #         per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
+                    #         = sess.run([loss, label_loss, seg_loss, per_instance_label_loss, \
+                    #         per_instance_seg_loss, labels_pred, seg_pred, per_instance_seg_pred_res], \
+                    #         feed_dict=feed_dict)
+                    
+                    label_pred_val, seg_pred_val, pred_seg_res \
+                            = sess.run([labels_pred, seg_pred, per_instance_seg_pred_res], \
                             feed_dict=feed_dict)
                     
                     predictions.append(
