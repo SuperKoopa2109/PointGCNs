@@ -407,9 +407,10 @@ def train():
                             is_training_ph: is_training, 
                             }
 
-                    print(f"feed_dict['labels_ph'] {feed_dict['labels_ph'].shape}")
-                    print(f"feed_dict['input_label_ph'] {feed_dict['input_label_ph'].shape}")
-                    print(f"feed_dict['seg_ph'] {feed_dict['seg_ph'].shape}")
+                    labels = ['labels_ph', 'input_label_ph', 'seg_ph']
+                    for idx, val in enumerate(feed_dict.values()):
+                        if idx > 0 and idx < 4:
+                            print(labels[idx - 1], val)
 
                     loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
                             per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
@@ -510,9 +511,10 @@ def train():
                         is_training_ph: is_training, 
                         }
                     
-                    print(f"feed_dict['labels_ph'] {feed_dict['labels_ph'].shape}")
-                    print(f"feed_dict['input_label_ph'] {feed_dict['input_label_ph'].shape}")
-                    print(f"feed_dict['seg_ph'] {feed_dict['seg_ph'].shape}")
+                    labels = ['labels_ph', 'input_label_ph', 'seg_ph']
+                    for idx, val in enumerate(feed_dict.values()):
+                        if idx > 0 and idx < 4:
+                            print(labels[idx - 1], val)
 
                     # feed_dict = {
                     #         pointclouds_ph: cur_data, 
