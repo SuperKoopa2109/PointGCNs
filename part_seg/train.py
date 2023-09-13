@@ -301,7 +301,7 @@ def train():
             for i in range(num_train_file):
                 
                 if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
-                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(512, i * 512)
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(512, start_idx = i * 512)
                 else:
                     cur_train_filename = os.path.join(hdf5_data_dir, train_file_list[train_file_idx[i]])
                     printout(flog, 'Loading train file ' + cur_train_filename)
