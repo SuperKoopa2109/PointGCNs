@@ -513,72 +513,104 @@ def train():
                 predictions = []
                 ground_truths = []
 
-                for i in range(vis_no):
+                vis_indices = [1,2,21]
 
-                    begidx = 0
-                    endidx = batch_size
+                cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(batch_size, is_training=False, start_idx = i * batch_size, visualize=True)
+                
+                begidx = 0
+                endidx = batch_size
 
-                    
-                    # only load 1 graph at once
-                    cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(32, is_training=False, start_idx = i * 32, visualize=True)
+                np.squeeze(cur_labels)
 
+                cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
+
+                feed_dict = {
+                    pointclouds_ph: cur_data[begidx: endidx, ...], 
+                    labels_ph: cur_labels[begidx: endidx, ...], 
+                    input_label_ph: cur_labels_one_hot[begidx: endidx, ...], 
+                    seg_ph: cur_seg[begidx: endidx, ...],
+                    is_training_ph: is_training, 
+                    }
+
+                label_pred_val, seg_pred_val, pred_seg_res \
+                    = sess.run([labels_pred, seg_pred, per_instance_seg_pred_res], \
+                    feed_dict=feed_dict)
+
+                for idx in vis_indices:
                     ground_truths.append(
-                        wandb.Object3D(np.hstack([cur_pos[0], cur_seg[0].reshape(-1, 1)]))
-                    )
-
-                    #cur_labels = cur_labels.reshape([1,-1])
-                    np.squeeze(cur_labels)
-
-                    cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
-
-                    # print(f'cur_data.shape {cur_data.shape}')
-                    # print(f'cur_labels.shape {cur_labels.shape}')
-                    # print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
-                    # print(f'seg_ph.shape {seg_ph.shape}')
-
-                    feed_dict = {
-                        pointclouds_ph: cur_data[begidx: endidx, ...], 
-                        labels_ph: cur_labels[begidx: endidx, ...], 
-                        input_label_ph: cur_labels_one_hot[begidx: endidx, ...], 
-                        seg_ph: cur_seg[begidx: endidx, ...],
-                        is_training_ph: is_training, 
-                        }
-                    
-                    # labels = ['labels_ph', 'input_label_ph', 'seg_ph']
-                    # for idx, val in enumerate(feed_dict.values()):
-                    #     if idx > 0 and idx < 4:
-                    #         print(labels[idx - 1], val)
-
-                    # feed_dict = {
-                    #         pointclouds_ph: cur_data, 
-                    #         labels_ph: cur_labels, 
-                    #         input_label_ph: cur_labels_one_hot, 
-                    #         seg_ph: cur_seg,
-                    #         is_training_ph: is_training, 
-                    #         }
-
-                    # loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
-                    #         per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
-                    #         = sess.run([loss, label_loss, seg_loss, per_instance_label_loss, \
-                    #         per_instance_seg_loss, labels_pred, seg_pred, per_instance_seg_pred_res], \
-                    #         feed_dict=feed_dict)
-                    
-                    label_pred_val, seg_pred_val, pred_seg_res \
-                            = sess.run([labels_pred, seg_pred, per_instance_seg_pred_res], \
-                            feed_dict=feed_dict)
-
-                    # print(f'label_pred_val {label_pred_val}')
-                    # print(f'label_pred_val.shape {label_pred_val.shape}')
-                    # print(f'seg_pred_val {seg_pred_val}')
-                    # print(f'seg_pred_val.shape {seg_pred_val.shape}')
-                    print(f'pred_seg_res {pred_seg_res}')
-                    print(f'pred_seg_res.shape {pred_seg_res.shape}')
-                    
-                    # print(f'np.hstack() {np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)])}')
+                            wandb.Object3D(np.hstack([cur_pos[idx], cur_seg[idx].reshape(-1, 1)]))
+                        )
 
                     predictions.append(
-                        wandb.Object3D(np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)]))
-                    )
+                            wandb.Object3D(np.hstack([cur_pos[idx], pred_seg_res[idx].reshape(-1,1)]))
+                        )
+
+                # for i in range(vis_no):
+
+                #     begidx = 0
+                #     endidx = batch_size
+
+                    
+                #     # only load 1 graph at once
+                #     cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(32, is_training=False, start_idx = i * 32, visualize=True)
+
+                #     ground_truths.append(
+                #         wandb.Object3D(np.hstack([cur_pos[0], cur_seg[0].reshape(-1, 1)]))
+                #     )
+
+                #     #cur_labels = cur_labels.reshape([1,-1])
+                #     np.squeeze(cur_labels)
+
+                #     cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
+
+                #     # print(f'cur_data.shape {cur_data.shape}')
+                #     # print(f'cur_labels.shape {cur_labels.shape}')
+                #     # print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
+                #     # print(f'seg_ph.shape {seg_ph.shape}')
+
+                #     feed_dict = {
+                #         pointclouds_ph: cur_data[begidx: endidx, ...], 
+                #         labels_ph: cur_labels[begidx: endidx, ...], 
+                #         input_label_ph: cur_labels_one_hot[begidx: endidx, ...], 
+                #         seg_ph: cur_seg[begidx: endidx, ...],
+                #         is_training_ph: is_training, 
+                #         }
+                    
+                #     # labels = ['labels_ph', 'input_label_ph', 'seg_ph']
+                #     # for idx, val in enumerate(feed_dict.values()):
+                #     #     if idx > 0 and idx < 4:
+                #     #         print(labels[idx - 1], val)
+
+                #     # feed_dict = {
+                #     #         pointclouds_ph: cur_data, 
+                #     #         labels_ph: cur_labels, 
+                #     #         input_label_ph: cur_labels_one_hot, 
+                #     #         seg_ph: cur_seg,
+                #     #         is_training_ph: is_training, 
+                #     #         }
+
+                #     # loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
+                #     #         per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
+                #     #         = sess.run([loss, label_loss, seg_loss, per_instance_label_loss, \
+                #     #         per_instance_seg_loss, labels_pred, seg_pred, per_instance_seg_pred_res], \
+                #     #         feed_dict=feed_dict)
+                    
+                #     label_pred_val, seg_pred_val, pred_seg_res \
+                #             = sess.run([labels_pred, seg_pred, per_instance_seg_pred_res], \
+                #             feed_dict=feed_dict)
+
+                #     # print(f'label_pred_val {label_pred_val}')
+                #     # print(f'label_pred_val.shape {label_pred_val.shape}')
+                #     # print(f'seg_pred_val {seg_pred_val}')
+                #     # print(f'seg_pred_val.shape {seg_pred_val.shape}')
+                #     # print(f'pred_seg_res {pred_seg_res}')
+                #     # print(f'pred_seg_res.shape {pred_seg_res.shape}')
+                    
+                #     # print(f'np.hstack() {np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)])}')
+
+                #     predictions.append(
+                #         wandb.Object3D(np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)]))
+                #     )
 
                     
 

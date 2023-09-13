@@ -178,7 +178,6 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
         seg = np.zeros([h5_filename, max_points], dtype=np.int32)
         pos = np.zeros([h5_filename, max_points, 3]) # 3 dims for x,y,z coordinates
         
-        # TMP CHANGE !!!! #
         batch_size = int(param_config.get_value('config', 'batchsize'))
 
         if is_training:
@@ -205,21 +204,21 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
             
             if visualize:
 
-                vis_sample_size = 3
+                # vis_sample_size = 3
 
-                vis_indices = [1,2,21] #np.random.choice(range(len(val_dataset)), size = vis_sample_size, replace = False)
+                # vis_indices = [1,2,21] #np.random.choice(range(len(val_dataset)), size = vis_sample_size, replace = False)
                 
-                assert(len(vis_indices) <= vis_sample_size)
+                # assert(len(vis_indices) <= vis_sample_size)
 
                 vis_loader = DataLoader(
-                    [val_dataset[idx] for idx in vis_indices],
+                    val_dataset,
                     batch_size = 1,
                     shuffle = False
                 )
 
                 vis_iter = iter(vis_loader)
 
-                for idx in range(vis_sample_size):
+                for idx in range(h5_filename):
                     batch = next(vis_iter)
                     data_batch, label_batch, seg_batch = batch['x'].numpy(), batch['category'].numpy(), batch['y'].numpy()
                     pos_batch = batch['pos'].numpy()
