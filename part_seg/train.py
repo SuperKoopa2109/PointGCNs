@@ -515,7 +515,7 @@ def train():
 
                 vis_indices = [1,2,21]
 
-                cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(batch_size, is_training=False, start_idx = i * batch_size, visualize=True)
+                cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(batch_size, is_training=False, start_idx = 0, visualize=True)
                 
                 begidx = 0
                 endidx = batch_size
