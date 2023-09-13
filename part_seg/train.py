@@ -72,7 +72,7 @@ def seed_everything(seed: int):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-seed_everything()
+seed_everything(FLAGS.random_seed)
 
 hdf5_data_dir = os.path.join(BASE_DIR, 'hdf5_data')
 
