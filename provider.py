@@ -36,15 +36,47 @@ elif param_config.get_value('system', 'dataset') == 'shapenet':
 
         category = "Airplane"
 
+        # train_dataset = ShapeNet(
+        #                     root=os.path.join(BASE_DIR, 'data', DATASET), 
+        #                     categories=category, 
+        #                     split='trainval')
+        
+        # test_dataset = ShapeNet(
+        #                     root=os.path.join(BASE_DIR, 'data', DATASET), 
+        #                     categories=category, 
+        #                     split='test')
+        
+        # TMP CHANGE !!!! 
+
+        no_points_sampled = 2048
+        batch_size = param_config.get_value('config', 'batchsize')
+
         train_dataset = ShapeNet(
                             root=os.path.join(BASE_DIR, 'data', DATASET), 
                             categories=category, 
+                            pre_transform=T.Compose([
+                                    T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True)
+                                        ]),
                             split='trainval')
-        
+
         test_dataset = ShapeNet(
                             root=os.path.join(BASE_DIR, 'data', DATASET), 
-                            categories=category, 
+                            categories=category,
+                            pre_transform=T.Compose([
+                                    T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True)
+                                        ]), 
                             split='test')
+
+        val_dataset = ShapeNet(
+            root=os.path.join(BASE_DIR, 'data', DATASET), 
+            categories=category, 
+            pre_transform=T.Compose([
+                                    T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True)
+                                        ]),
+            split = "val"
+        )
+
+        # END TMP CHANGE !!!!
 
 
 def shuffle_data(data, labels):
@@ -128,12 +160,17 @@ def load_h5(h5_filename):
 def loadDataFile(filename):
     return load_h5(filename)
 
-def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start_idx=0, visualize=False):
+def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start_idx=0, visualize=False, vis_samples=None):
     # h5_filename can also be used as a batch_size for shapenet dataset from pytorch geometric
     # Load data for 
     if param_config.get_value('system', 'dataset') == 'shapenet': 
         global train_dataset
         global test_dataset
+
+        global train_loader
+        global test_loader
+        global val_loader
+        global vis_loader
         category = "Airplane"
         
         data = np.zeros([h5_filename, max_points, 3])
@@ -141,6 +178,79 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
         seg = np.zeros([h5_filename, max_points], dtype=np.int32)
         pos = np.zeros([h5_filename, max_points, 3]) # 3 dims for x,y,z coordinates
         
+        # TMP CHANGE !!!! #
+        batch_size = param_config.get_value('config', 'batchsize')
+
+        if is_training:
+            
+            train_loader = DataLoader(
+                train_dataset[start_idx:min(start_idx + h5_filename, len(train_dataset) - 1 )],
+                batch_size=1,
+                shuffle=True
+            )
+
+            train_iter = iter(train_loader)
+
+            for idx in range(h5_filename):
+                batch = next(train_iter)
+                data_batch, label_batch, seg_batch = batch['x'].numpy(), batch['category'].numpy(), batch['y'].numpy()
+                
+                data[idx] = data_batch
+                label[idx] = label_batch
+                seg[idx] = seg_batch
+            
+            return (data, label, seg)
+
+        else:
+            
+            if visualize:
+
+                vis_sample_size = 3
+
+                vis_indices = [1,2,21] #np.random.choice(range(len(val_dataset)), size = vis_sample_size, replace = False)
+                
+                vis_loader = DataLoader(
+                    [val_dataset[idx] for idx in vis_indices],
+                    batch_size = 1,
+                    shuffle = False
+                )
+
+                vis_iter = iter(vis_loader)
+
+                for idx in range(h5_filename):
+                    batch = next(vis_iter)
+                    data_batch, label_batch, seg_batch = batch['x'].numpy(), batch['category'].numpy(), batch['y'].numpy()
+                    pos_batch = batch['pos'].numpy()
+                    
+                    data[idx] = data_batch
+                    label[idx] = label_batch
+                    seg[idx] = seg_batch
+                    pos[idx] = pos_batch 
+
+                return (data, label, seg, pos)
+
+            else:
+
+                val_loader = DataLoader(
+                    val_dataset,
+                    batch_size=1,
+                    shuffle=True
+                )
+
+                val_iter = iter(val_loader)
+
+                for idx in range(h5_filename):
+                    batch = next(val_iter)
+                    data_batch, label_batch, seg_batch = batch['x'].numpy(), batch['category'].numpy(), batch['y'].numpy()
+                    
+                    data[idx] = data_batch
+                    label[idx] = label_batch
+                    seg[idx] = seg_batch
+                
+                return (data, label, seg)
+
+        # END TMP CHANGE !!!! #
+
         if is_training:
             for i in range(start_idx, min(start_idx + h5_filename, len(train_dataset) - 1 )):
                 data_batch, label_batch, seg_batch = train_dataset[i]['x'].numpy(), train_dataset[i]['category'].numpy(), train_dataset[i]['y'].numpy()

@@ -7,6 +7,9 @@ import json
 import os
 import sys
 
+import torch
+import random
+
 import wandb
 
 # TMP IMPORT!!
@@ -36,6 +39,7 @@ parser.add_argument('--dataset', default='modelnet40', help='Dataset to be used 
 parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
 parser.add_argument('--use_drive', default='False', help='results are stored in google drive [default: False]')
 parser.add_argument('--use_wandb', default='False', help='results are stored in weights and biases [default: False]')
+parser.add_argument('--random_seed', type=int, default=42, help='random seed used [default: 42]')
 FLAGS = parser.parse_args()
 
 print(f"*******BASE_DIR: {param_config.get_value('paths', 'BASE_DIR')}*******")
@@ -43,6 +47,7 @@ param_config.set_value('system', 'dataset', FLAGS.dataset)
 param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
 param_config.set_value('system', 'use_drive', FLAGS.use_drive)
 param_config.set_value('system', 'use_wandb', FLAGS.use_wandb)
+param_config.set_value('config', 'batchsize', FLAGS.batch)
 param_config.save()
 
 import provider
@@ -52,8 +57,22 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
 
 import torch_geometric.transforms as T
-from torch_geometric.datasets import ShapeNet #ModelNet
-from torch_geometric.loader import DataLoader
+# from torch_geometric.datasets import ShapeNet #ModelNet
+# from torch_geometric.loader import DataLoader
+
+def seed_everything(seed: int):
+    r"""Sets the seed for generating random numbers in :pytorch:`PyTorch`,
+    :obj:`numpy` and Python.
+
+    Args:
+        seed (int): The desired seed.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+seed_everything()
 
 hdf5_data_dir = os.path.join(BASE_DIR, 'hdf5_data')
 
@@ -296,8 +315,8 @@ def train():
                     printout(flog, 'Loading train file ' + cur_train_filename)
                     cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_train_filename)
 
-                cur_data, cur_labels, order = provider.shuffle_data(cur_data, np.squeeze(cur_labels))
-                cur_seg = cur_seg[order, ...]
+                # cur_data, cur_labels, order = provider.shuffle_data(cur_data, np.squeeze(cur_labels))
+                # cur_seg = cur_seg[order, ...]
 
                 cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
 
