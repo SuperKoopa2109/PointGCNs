@@ -9,6 +9,9 @@ import sys
 
 import wandb
 
+# TMP IMPORT!!
+import matplotlib.pyplot as plt
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.dirname(BASE_DIR))
@@ -500,6 +503,20 @@ def train():
                     # only load 1 graph at once
                     cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(32, is_training=False, start_idx = i * 32, visualize=True)
 
+                    ground_truths.append(
+                        wandb.Object3D(np.hstack([cur_pos[0], cur_seg[0].reshape(-1, 1)]))
+                    )
+
+                    fig = plt.figure()
+                    ax = fig.add_subplot(projection='3d') #data
+                    ax.scatter(
+                        cur_pos[0][0],
+                        cur_pos[0][1],
+                        cur_pos[0][2],
+                        c = cur_seg[0]
+                    )
+                    fig.savefig(os.path.join('tmp', 'pointcloud.png'))
+
                     #cur_labels = cur_labels.reshape([1,-1])
                     np.squeeze(cur_labels)
 
@@ -545,16 +562,13 @@ def train():
                     # print(f'label_pred_val.shape {label_pred_val.shape}')
                     # print(f'seg_pred_val {seg_pred_val}')
                     # print(f'seg_pred_val.shape {seg_pred_val.shape}')
-                    # print(f'pred_seg_res {pred_seg_res}')
-                    # print(f'pred_seg_res.shape {pred_seg_res.shape}')
+                    print(f'pred_seg_res {pred_seg_res}')
+                    print(f'pred_seg_res.shape {pred_seg_res.shape}')
                     
                     # print(f'np.hstack() {np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)])}')
 
                     predictions.append(
                         wandb.Object3D(np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)]))
-                    )
-                    ground_truths.append(
-                        wandb.Object3D(np.hstack([cur_pos[0], cur_seg[0].reshape(-1, 1)]))
                     )
 
                     
