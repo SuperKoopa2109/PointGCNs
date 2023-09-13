@@ -297,14 +297,6 @@ def train():
         def train_one_epoch(train_file_idx, epoch_num):
             is_training = True
 
-            # TODO: REEEMOOOVE                 
-            total_loss = 0.0
-            total_label_loss = 0.0
-            total_seg_loss = 0.0
-            total_label_acc = 0.0
-            total_seg_acc = 0.0
-            return total_loss, total_label_loss, total_label_acc, total_seg_loss, total_seg_acc
-
             # TODO: get file len; think of what should be in one batch/"train_file" and load that from dataset
             for i in range(num_train_file):
                 
