@@ -510,9 +510,9 @@ def train():
                     fig = plt.figure()
                     ax = fig.add_subplot(projection='3d') #data
                     ax.scatter(
-                        cur_pos[0][0],
-                        cur_pos[0][1],
-                        cur_pos[0][2],
+                        cur_pos[0][:,0],
+                        cur_pos[0][:,1],
+                        cur_pos[0][:,2],
                         c = cur_seg[0]
                     )
                     fig.savefig(os.path.join('tmp', 'pointcloud.png'))
