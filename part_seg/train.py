@@ -526,16 +526,6 @@ def train():
                         wandb.Object3D(np.hstack([cur_pos[0], cur_seg[0].reshape(-1, 1)]))
                     )
 
-                    fig = plt.figure()
-                    ax = fig.add_subplot(projection='3d') #data
-                    ax.scatter(
-                        cur_pos[0][:,0],
-                        cur_pos[0][:,1],
-                        cur_pos[0][:,2],
-                        c = cur_seg[0]
-                    )
-                    fig.savefig(os.path.join('tmp', 'pointcloud.png'))
-
                     #cur_labels = cur_labels.reshape([1,-1])
                     np.squeeze(cur_labels)
 
