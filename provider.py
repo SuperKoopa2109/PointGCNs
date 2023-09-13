@@ -182,15 +182,17 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
 
         if is_training:
             
+            end_idx = min(start_idx + h5_filename, len(train_dataset) - 1 )
+
             train_loader = DataLoader(
-                train_dataset[start_idx:min(start_idx + h5_filename, len(train_dataset) - 1 )],
+                train_dataset[start_idx:end_idx],
                 batch_size=1,
                 shuffle=True
             )
 
             train_iter = iter(train_loader)
 
-            for idx in range(h5_filename):
+            for idx in range(end_idx - start_idx):
                 batch = next(train_iter)
                 data_batch, label_batch, seg_batch = batch['x'].numpy(), batch['category'].numpy(), batch['y'].numpy()
                 
@@ -232,15 +234,17 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
 
             else:
 
+                end_idx = min(start_idx + h5_filename, len(train_dataset) - 1 )
+
                 val_loader = DataLoader(
-                    val_dataset,
+                    val_dataset[start_idx:end_idx],
                     batch_size=1,
                     shuffle=True
                 )
 
                 val_iter = iter(val_loader)
 
-                for idx in range(h5_filename):
+                for idx in range(end_idx - start_idx):
                     batch = next(val_iter)
                     data_batch, label_batch, seg_batch = batch['x'].numpy(), batch['category'].numpy(), batch['y'].numpy()
                     
