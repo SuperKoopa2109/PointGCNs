@@ -607,7 +607,7 @@ def train():
                     
 
                 # Store 3D models every 5 epochs
-                if ((epoch + 1) % 1 == 0):
+                if ((epoch + 1) % 5 == 0):
                     table.add_data(
                         epoch, ground_truths, predictions
                     )
