@@ -209,8 +209,8 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
 
                 vis_indices = [1,2,21] #np.random.choice(range(len(val_dataset)), size = vis_sample_size, replace = False)
                 
-                assert(vis_indices <= vis_sample_size)
-                
+                assert(vis_indices <= len(vis_sample_size))
+
                 vis_loader = DataLoader(
                     [val_dataset[idx] for idx in vis_indices],
                     batch_size = 1,
