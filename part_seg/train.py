@@ -47,7 +47,7 @@ param_config.set_value('system', 'dataset', FLAGS.dataset)
 param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
 param_config.set_value('system', 'use_drive', FLAGS.use_drive)
 param_config.set_value('system', 'use_wandb', FLAGS.use_wandb)
-param_config.set_value('config', 'batchsize', FLAGS.batch)
+param_config.set_value('config', 'batchsize', str(FLAGS.batch))
 param_config.save()
 
 import provider

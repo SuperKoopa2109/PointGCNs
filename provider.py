@@ -49,7 +49,7 @@ elif param_config.get_value('system', 'dataset') == 'shapenet':
         # TMP CHANGE !!!! 
 
         no_points_sampled = 2048
-        batch_size = param_config.get_value('config', 'batchsize')
+        batch_size = int(param_config.get_value('config', 'batchsize'))
 
         train_dataset = ShapeNet(
                             root=os.path.join(BASE_DIR, 'data', DATASET), 
@@ -179,7 +179,7 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
         pos = np.zeros([h5_filename, max_points, 3]) # 3 dims for x,y,z coordinates
         
         # TMP CHANGE !!!! #
-        batch_size = param_config.get_value('config', 'batchsize')
+        batch_size = int(param_config.get_value('config', 'batchsize'))
 
         if is_training:
             
