@@ -349,9 +349,9 @@ def objective(trial):
     config.batch_size = trial.suggest_int('batch_size', low=16, high=32, step=16)
     config.num_workers = 1
     config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
-    config.epochs = 1 #trial.suggest_int('epoch_count', low=20, high=60, step=20)
+    config.epochs = trial.suggest_int('epoch_count', low=20, high=60, step=20)
     config.embed_dim=trial.suggest_int('embed_dim', low=64, high=128, step=64)
-    config.hidden_layers = 1 #trial.suggest_int("num_layers", 2, 5)
+    config.hidden_layers = trial.suggest_int("num_layers", 2, 5)
     config.conv_layer = trial.suggest_categorical('conv_layer', ['SAGEConv', 'GATConv', 'GCNConv'])
     config.hidden_dim=trial.suggest_int('hidden_dim', low=128, high=256, step=128)
     config.learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
@@ -710,8 +710,6 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
             wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], data['y'].reshape(-1, 1)]), dim=0).cpu().numpy())
         )
 
-        print(f'predictions {predictions}')
-
 
     torch.save(all_logit_preds, os.path.join(log_run_path, f'logit_preds_{config.wandb_run_name}_epoch_{epoch}.pt'))
     torch.save(all_preds, os.path.join(log_run_path, f'preds_{config.wandb_run_name}_epoch_{epoch}.pt'))
@@ -720,7 +718,7 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
     torch.save(all_positions, os.path.join(log_run_path, f'positions_{config.wandb_run_name}_epoch_{epoch}.pt'))
 
     # Store 3D models every 5 epochs
-    if ((epoch + 1) % 1 == 0):
+    if ((epoch + 1) % 5 == 0):
         table.add_data(
             epoch, ground_truths, predictions
         )
