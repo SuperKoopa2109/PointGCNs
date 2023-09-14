@@ -345,7 +345,7 @@ def objective(trial):
     config.categories = "Airplane"
     config.savedir = "data"
     config.logdir = LOG_DIR
-    config.radius_threshold = trial.suggest_float('radius_threshold', low=0.02, high=0.1, step=0.02, log=False)
+    config.radius_threshold = trial.suggest_float('radius_threshold', low=0.02, high=0.06, step=0.02, log=False)
     config.batch_size = trial.suggest_int('batch_size', low=16, high=32, step=16)
     config.num_workers = 1
     config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
@@ -711,7 +711,7 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         )
 
         print(f'predictions {predictions}')
-        
+
 
     torch.save(all_logit_preds, os.path.join(log_run_path, f'logit_preds_{config.wandb_run_name}_epoch_{epoch}.pt'))
     torch.save(all_preds, os.path.join(log_run_path, f'preds_{config.wandb_run_name}_epoch_{epoch}.pt'))
