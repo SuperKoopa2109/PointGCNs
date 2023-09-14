@@ -372,7 +372,7 @@ def objective(trial):
             ]
         )
 
-    train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader, vis_loader = load_data(config, radius_threshold = )
+    train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader, vis_loader = load_data(config, radius_threshold = config.radius_threshold)
 
     sample = next(iter(train_dataset))
 
