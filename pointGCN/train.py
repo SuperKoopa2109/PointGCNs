@@ -351,7 +351,7 @@ def objective(trial):
     config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
     config.epochs = 1 #trial.suggest_int('epoch_count', low=20, high=60, step=20)
     config.embed_dim=trial.suggest_int('embed_dim', low=64, high=128, step=64)
-    config.hidden_layers = trial.suggest_int("num_layers", 2, 5)
+    config.hidden_layers = 1 #trial.suggest_int("num_layers", 2, 5)
     config.conv_layer = trial.suggest_categorical('conv_layer', ['SAGEConv', 'GATConv', 'GCNConv'])
     config.hidden_dim=trial.suggest_int('hidden_dim', low=128, high=256, step=128)
     config.learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
@@ -417,12 +417,11 @@ def objective(trial):
         if trial.should_prune():
             raise optuna.TrialPruned()
 
+    res = test_model(model, loss, test_loader, device, config)
 
     if is_imported('wandb'):
             wandb.log({"PredClass_vs_TrueClass": table})
             wandb.finish()
-
-    res = test_model(model, loss, test_loader, device, config)
 
     return res['Test/Accuracy']
 
@@ -660,7 +659,7 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
     predictions, ground_truths = [], []
     progress_bar = tqdm(
         range(config.vis_sample_size),
-        desc=f"Generating Visualizations for Epoch {epoch}/{config.epochs}"
+        desc=f"Generating Visualizations for Epoch {epoch + 1}/{config.epochs}"
     )
 
     # determine all shapes for data
