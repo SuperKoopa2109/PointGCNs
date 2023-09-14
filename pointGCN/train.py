@@ -661,7 +661,7 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
     """Visualize validation result in a Weights & Biases Table"""
     predictions, ground_truths = [], []
     progress_bar = tqdm(
-        range(config.vis_sample_size),
+        range(config.vis_sample_size - 1),
         desc=f"Generating Visualizations for Epoch {epoch + 1}/{config.epochs}"
     )
 
