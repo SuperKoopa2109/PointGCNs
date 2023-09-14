@@ -724,7 +724,7 @@ def test_model(model, loss, test_loader, device, config):
     
     progress_bar = tqdm(
         range(num_test_examples),
-        desc=f"Test Epoch {epoch + 1}/{config.epochs}"
+        desc=f"Testing model"
     )
     for batch_idx in progress_bar:
         data = next(iter(test_loader)).to(device)
