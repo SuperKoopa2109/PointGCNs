@@ -335,13 +335,13 @@ def objective(trial):
         print(f'{modulename} not imported || Run will only be logged locally')
 
         config = Config({
-            "model_name": "ShapeNet",
+            "model_name": "GSegNet",
             "categories": "Airplane",
         })
 
     config.seed = 42
     config.study_name = trial.study.study_name
-    config.model_name = "ShapeNet"
+    config.model_name = "GSegNet"
     config.categories = "Airplane"
     config.savedir = "data"
     config.logdir = LOG_DIR
@@ -377,7 +377,7 @@ def objective(trial):
     sample = next(iter(train_dataset))
 
     model = load_model(
-        modelname = 'SageNet', 
+        modelname = config.model_name, 
         input_dim = sample['x'].shape[1], 
         embed_dim=config.embed_dim, 
         hidden_dim=config.hidden_dim,  #dimensions of first hidden layer
@@ -407,9 +407,16 @@ def objective(trial):
     loss = nn.CrossEntropyLoss()
 
     for epoch in range(config.epochs):
-        epoch_loss, epoch_accuracy = train_step(epoch, model, optimizer, loss, train_loader, device, config)
-        val_step(epoch, model, loss, val_loader, device, config)
+        train_loss, train_accuracy = train_step(epoch, model, optimizer, loss, train_loader, device, config)
+        val_loss, val_accuracy = val_step(epoch, model, loss, val_loader, device, config)
         visualize_evaluation(epoch, model, table, vis_loader, config, device)
+
+        trial.report(val_accuracy, epoch)
+        
+        # Handle pruning based on the validation accuracy.
+        if trial.should_prune():
+            raise optuna.TrialPruned()
+
 
     if is_imported('wandb'):
             wandb.log({"PredClass_vs_TrueClass": table})
@@ -445,7 +452,8 @@ def train(FLAGS):
         study = optuna.create_study(
                 study_name=study_name, 
                 storage=storage_name, 
-                sampler=TPESampler(), 
+                sampler=TPESampler(), # choice based on: https://optuna.readthedocs.io/en/stable/tutorial/10_key_features/003_efficient_optimization_algorithms.html
+                pruner=optuna.pruners.MedianPruner(),
                 directions=["maximize"]
             )
         
@@ -645,7 +653,7 @@ def val_step(epoch, model, loss, val_loader, device, config):
     if is_imported('wandb'):
         wandb.log(log)
 
-    return log
+    return (epoch_loss, epoch_accuracy)
 
 def visualize_evaluation(epoch, model, table, vis_loader, config, device):
     """Visualize validation result in a Weights & Biases Table"""
@@ -708,8 +716,7 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         )
     return table
 
-
-def test_model(epoch, model, loss, test_loader, device, config):
+def test_model(model, loss, test_loader, device, config):
     """Testing Step"""
     model.eval()
     epoch_loss, correct, total_predictions = 0, 0, 0
