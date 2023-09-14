@@ -37,7 +37,7 @@ from optuna.samplers import TPESampler
 import wandb
 
 
-from models.pointGCN import SAGE_model
+from models.pointGCN import seg_model
 
 
 CUR_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -287,7 +287,7 @@ def load_model(
         ):
                 
     if modelname == 'SageNet':
-        return SAGE_model(
+        return seg_model(
              input_dim=input_dim, 
              embed_dim=embed_dim, 
              hidden_dim=hidden_dim,
@@ -299,7 +299,7 @@ def load_model(
              norm=norm
              )
     else:
-        return SAGE_model(
+        return seg_model(
              input_dim=input_dim, 
              embed_dim=embed_dim, 
              hidden_dim=hidden_dim, 
@@ -340,6 +340,7 @@ def objective(trial):
         })
 
     config.seed = 42
+    config.study_name = trial.study.study_name
     config.model_name = "ShapeNet"
     config.categories = "Airplane"
     config.savedir = "data"

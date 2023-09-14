@@ -77,7 +77,7 @@ class generic_model(nn.Module):
         return self.node_embeder(data['pos'])
 
 
-class SAGE_model(nn.Module):
+class seg_model(nn.Module):
     def __init__(self, 
                  input_dim, 
                  embed_dim, 
