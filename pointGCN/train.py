@@ -241,7 +241,7 @@ def load_data(config: object, radius_threshold = 0.02):
     vis_loader = DataLoader(
         [val_dataset[idx] for idx in vis_indices],
         batch_size = 1,
-        shuffle = True,
+        shuffle = False,
         num_workers = config['num_workers']
     )
 
@@ -415,6 +415,9 @@ def objective(trial):
         
         # Handle pruning based on the validation accuracy.
         if trial.should_prune():
+            if is_imported('wandb'):
+                wandb.log({"PredClass_vs_TrueClass": table})
+                wandb.finish()
             raise optuna.TrialPruned()
 
     res = test_model(model, loss, test_loader, device, config)
@@ -662,26 +665,31 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         desc=f"Generating Visualizations for Epoch {epoch + 1}/{config.epochs}"
     )
 
-    # determine all shapes for data
-    data = next(iter(vis_loader)).to(device)
+    # # determine all shapes for data
+    # data = next(iter(vis_loader)).to(device)
 
-    no_of_samples, embedded_dim = data['x'].size()
+    
 
 
-    with torch.no_grad():
-            logit_preds = model(data)
-
-    all_logit_preds = torch.zeros([config.vis_sample_size, no_of_samples, logit_preds.size()[-1]])
-    all_preds = torch.zeros([config.vis_sample_size, no_of_samples])
-    all_trues = torch.zeros([config.vis_sample_size, no_of_samples])
-    all_norm_data = torch.zeros([config.vis_sample_size, no_of_samples, embedded_dim])
-    all_positions = torch.zeros([config.vis_sample_size, no_of_samples, data['pos'].size()[-1]])
+    vis_iter = iter(vis_loader)
 
     for idx in progress_bar:
-        data = next(iter(vis_loader)).to(device)
-        
+        data = next(vis_iter).to(device)
+
         with torch.no_grad():
             logit_preds = model(data)
+
+        if idx == 0:
+            no_of_samples, embedded_dim = data['x'].size()
+
+            all_logit_preds = torch.zeros([config.vis_sample_size, no_of_samples, logit_preds.size()[-1]])
+            all_preds = torch.zeros([config.vis_sample_size, no_of_samples])
+            all_trues = torch.zeros([config.vis_sample_size, no_of_samples])
+            all_norm_data = torch.zeros([config.vis_sample_size, no_of_samples, embedded_dim])
+            all_positions = torch.zeros([config.vis_sample_size, no_of_samples, data['pos'].size()[-1]])
+
+        
+        
         
         preds = logit_preds.max(1)[1]
 
