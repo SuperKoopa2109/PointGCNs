@@ -158,7 +158,7 @@ def seed_everything(seed: int):
     torch.cuda.manual_seed_all(seed)
     
 
-def load_data(config: object):
+def load_data(config: object, radius_threshold = 0.02):
 
     # TODO: add edge features to graph -> Distances ? Degree ? Nearest Neighbourhood -> argsort of distnaces and one-hot-encoded?
     
@@ -167,7 +167,6 @@ def load_data(config: object):
     # transform = T.SamplePoints(config.sample_points)
 
     no_points_sampled = 2048
-    radius_threshold = 0.02
 
     # # Load train_dataset first to get first sample and determine OneHotDegree number
     # train_dataset = ShapeNet(
@@ -236,10 +235,11 @@ def load_data(config: object):
         num_workers=config['num_workers']
     )
 
-    random_indices = np.random.choice(range(len(val_dataset)), size = config.vis_sample_size, replace = False)
+    # random_indices = np.random.choice(range(len(val_dataset)), size = config.vis_sample_size, replace = False)
+    vis_indices = [1,2,21]
 
     vis_loader = DataLoader(
-        [val_dataset[idx] for idx in random_indices],
+        [val_dataset[idx] for idx in vis_indices],
         batch_size = 1,
         shuffle = True,
         num_workers = config['num_workers']
@@ -345,6 +345,7 @@ def objective(trial):
     config.categories = "Airplane"
     config.savedir = "data"
     config.logdir = LOG_DIR
+    config.radius_threshold = trial.suggest_float('radius_threshold', low=0.02, high=0.1, step=0.02, log=False)
     config.batch_size = trial.suggest_int('batch_size', low=16, high=32, step=16)
     config.num_workers = 1
     config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
@@ -371,7 +372,7 @@ def objective(trial):
             ]
         )
 
-    train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader, vis_loader = load_data(config)
+    train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader, vis_loader = load_data(config, radius_threshold = )
 
     sample = next(iter(train_dataset))
 
