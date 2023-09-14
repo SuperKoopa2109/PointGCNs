@@ -409,7 +409,7 @@ def objective(trial):
     for epoch in range(config.epochs):
         train_loss, train_accuracy = train_step(epoch, model, optimizer, loss, train_loader, device, config)
         val_loss, val_accuracy = val_step(epoch, model, loss, val_loader, device, config)
-        visualize_evaluation(epoch, model, table, vis_loader, config, device)
+        table = visualize_evaluation(epoch, model, table, vis_loader, config, device)
 
         trial.report(val_accuracy, epoch)
         
@@ -709,6 +709,9 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
         ground_truths.append(
             wandb.Object3D(torch.squeeze(torch.hstack([data['pos'], data['y'].reshape(-1, 1)]), dim=0).cpu().numpy())
         )
+
+        print(f'predictions {predictions}')
+        
 
     torch.save(all_logit_preds, os.path.join(log_run_path, f'logit_preds_{config.wandb_run_name}_epoch_{epoch}.pt'))
     torch.save(all_preds, os.path.join(log_run_path, f'preds_{config.wandb_run_name}_epoch_{epoch}.pt'))
