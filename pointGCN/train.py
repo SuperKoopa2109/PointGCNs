@@ -349,7 +349,7 @@ def objective(trial):
     config.batch_size = trial.suggest_int('batch_size', low=16, high=32, step=16)
     config.num_workers = 1
     config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
-    config.epochs = trial.suggest_int('epoch_count', low=20, high=60, step=20)
+    config.epochs = 1 #trial.suggest_int('epoch_count', low=20, high=60, step=20)
     config.embed_dim=trial.suggest_int('embed_dim', low=64, high=128, step=64)
     config.hidden_layers = trial.suggest_int("num_layers", 2, 5)
     config.conv_layer = trial.suggest_categorical('conv_layer', ['SAGEConv', 'GATConv', 'GCNConv'])
@@ -407,13 +407,17 @@ def objective(trial):
     loss = nn.CrossEntropyLoss()
 
     for epoch in range(config.epochs):
-        train_step(epoch, model, optimizer, loss, train_loader, device, config)
+        epoch_loss, epoch_accuracy = train_step(epoch, model, optimizer, loss, train_loader, device, config)
         val_step(epoch, model, loss, val_loader, device, config)
         visualize_evaluation(epoch, model, table, vis_loader, config, device)
 
     if is_imported('wandb'):
             wandb.log({"PredClass_vs_TrueClass": table})
             wandb.finish()
+
+    res = test_model(model, loss, test_loader, device, config)
+
+    return res['Test/Accuracy']
 
 
 def train(FLAGS):
@@ -442,7 +446,7 @@ def train(FLAGS):
                 study_name=study_name, 
                 storage=storage_name, 
                 sampler=TPESampler(), 
-                directions=["minimize"]
+                directions=["maximize"]
             )
         
         study.optimize(objective, n_trials=20)
@@ -585,6 +589,8 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
             "Train/Accuracy": epoch_accuracy
         })
 
+    return (epoch_loss, epoch_accuracy)
+
 # for epoch in range(config.epochs):
 #     train_step(epoch)
     
@@ -701,6 +707,54 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
             epoch, ground_truths, predictions
         )
     return table
+
+
+def test_model(epoch, model, loss, test_loader, device, config):
+    """Testing Step"""
+    model.eval()
+    epoch_loss, correct, total_predictions = 0, 0, 0
+    num_test_examples = len(test_loader)
+    
+    progress_bar = tqdm(
+        range(num_test_examples),
+        desc=f"Test Epoch {epoch + 1}/{config.epochs}"
+    )
+    for batch_idx in progress_bar:
+        data = next(iter(test_loader)).to(device)
+        
+        with torch.no_grad():
+            prediction = model(data)
+        
+        l = loss(prediction, data['y'])
+        # epoch_loss += l.item()
+        # correct += prediction.max(1)[1].eq(data.y).sum().item()
+
+        epoch_loss += l.item()
+        class_pred = prediction.max(1)[1]
+        correct += class_pred.eq(data['y']).sum().item()
+        total_predictions += data['x'].shape[0]
+    
+    epoch_loss = epoch_loss / num_test_examples
+    epoch_accuracy = correct / total_predictions
+        
+        # if batch_idx < 6:
+            
+    
+    # epoch_loss = epoch_loss / num_val_examples
+    # epoch_accuracy = correct / len(val_loader.dataset)
+    
+    print(f'*** TESTING ***')
+    print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
+
+    log = {
+        "Test/Loss": epoch_loss,
+        "Test/Accuracy": epoch_accuracy
+    }
+
+    if is_imported('wandb'):
+        wandb.log(log)
+
+    return log
 
 
 # def save_checkpoint(epoch):
