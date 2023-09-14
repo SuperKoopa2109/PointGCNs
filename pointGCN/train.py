@@ -661,7 +661,7 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
     """Visualize validation result in a Weights & Biases Table"""
     predictions, ground_truths = [], []
     progress_bar = tqdm(
-        range(config.vis_sample_size - 1),
+        range(config.vis_sample_size),
         desc=f"Generating Visualizations for Epoch {epoch + 1}/{config.epochs}"
     )
 
@@ -720,7 +720,7 @@ def visualize_evaluation(epoch, model, table, vis_loader, config, device):
     torch.save(all_positions, os.path.join(log_run_path, f'positions_{config.wandb_run_name}_epoch_{epoch}.pt'))
 
     # Store 3D models every 5 epochs
-    if ((epoch + 1) % 5 == 0):
+    if ((epoch + 1) % 1 == 0):
         table.add_data(
             epoch, ground_truths, predictions
         )
