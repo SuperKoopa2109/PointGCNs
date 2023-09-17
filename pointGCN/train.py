@@ -454,6 +454,7 @@ def train(FLAGS):
         study = optuna.create_study(
                 study_name=study_name, 
                 storage=storage_name, 
+                load_if_exists=True,
                 sampler=TPESampler(), # choice based on: https://optuna.readthedocs.io/en/stable/tutorial/10_key_features/003_efficient_optimization_algorithms.html
                 pruner=optuna.pruners.MedianPruner(),
                 directions=["maximize"]
