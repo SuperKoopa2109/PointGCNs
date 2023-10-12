@@ -36,6 +36,8 @@ from optuna.samplers import TPESampler
 # For logging
 import wandb
 
+from sklearn.metrics import roc_curve, auc
+
 
 from models.pointGCN import seg_model
 
@@ -311,6 +313,21 @@ def load_model(
              norm=norm
              )
 
+def get_metric(y_pred, y_true, metric_type = 'accuracy'):
+    
+    metric_val = 0
+
+    if metric_type == 'auc':
+        fpr, tpr, thresh = roc_curve(y_pred, y_true)
+
+        metric_val = auc(fpr, tpr)
+
+
+    return metric_val
+
+
+
+
 def objective(trial):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -487,6 +504,7 @@ def train(FLAGS):
         config.seed = 42
         config.model_name = "ShapeNet"
         config.categories = "Airplane"
+        config.metric = FLAGS.metric
         config.savedir = "data"
         config.logdir = LOG_DIR
         config.batch_size = 32
@@ -571,6 +589,12 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
     epoch_loss, correct, total_predictions = 0, 0, 0
     num_train_examples = len(train_loader)
     
+    if config.metric == 'auc':
+        metric_name = "Train/AUC_Score"
+        auc_scores = np.zeros(num_train_examples)
+    else:
+        metric_name = "Train/Accuracy"
+    
     progress_bar = tqdm(
         range(num_train_examples),
         desc=f"Training Epoch {epoch + 1}/{config.epochs}"
@@ -586,21 +610,30 @@ def train_step(epoch, model, optimizer, loss, train_loader, device, config):
         
         epoch_loss += l.item()
         class_pred = prediction.max(1)[1]
-        correct += class_pred.eq(data['y']).sum().item()
-        total_predictions += data['x'].shape[0]
+
+        if config.metric == 'auc':
+            auc_scores[batch_idx] = get_metric(class_pred, data['y'])
+        else:
+            correct += class_pred.eq(data['y']).sum().item()
+            total_predictions += data['x'].shape[0]
     
     epoch_loss = epoch_loss / num_train_examples
-    epoch_accuracy = correct / total_predictions
+    # epoch_accuracy = correct / total_predictions
+
+    if config.metric == 'auc':
+        epoch_metric = auc_scores.sum() / num_train_examples
+    else: 
+        epoch_metric = correct / total_predictions
     
-    print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
+    print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_metric}')
 
     if is_imported('wandb'):
         wandb.log({
             "Train/Loss": epoch_loss,
-            "Train/Accuracy": epoch_accuracy
+            metric_name: epoch_metric
         })
 
-    return (epoch_loss, epoch_accuracy)
+    return (epoch_loss, epoch_metric)
 
 # for epoch in range(config.epochs):
 #     train_step(epoch)
@@ -616,11 +649,18 @@ def val_step(epoch, model, loss, val_loader, device, config):
     model.eval()
     epoch_loss, correct, total_predictions = 0, 0, 0
     num_val_examples = len(val_loader)
+
+    if config.metric == 'auc':
+        metric_name = "Validation/AUC_Score"
+        auc_scores = np.zeros(num_val_examples)
+    else:
+        metric_name = "Validation/Accuracy"
     
     progress_bar = tqdm(
         range(num_val_examples),
         desc=f"Validation Epoch {epoch + 1}/{config.epochs}"
     )
+
     for batch_idx in progress_bar:
         data = next(iter(val_loader)).to(device)
         
@@ -633,30 +673,41 @@ def val_step(epoch, model, loss, val_loader, device, config):
 
         epoch_loss += l.item()
         class_pred = prediction.max(1)[1]
-        correct += class_pred.eq(data['y']).sum().item()
-        total_predictions += data['x'].shape[0]
+
+        if config.metric == 'auc':
+            auc_scores[batch_idx] = get_metric(class_pred, data['y'])
+        else:
+            correct += class_pred.eq(data['y']).sum().item()
+            total_predictions += data['x'].shape[0]
+
+        # correct += class_pred.eq(data['y']).sum().item()
+        # total_predictions += data['x'].shape[0]
     
     epoch_loss = epoch_loss / num_val_examples
-    epoch_accuracy = correct / total_predictions
+    # epoch_accuracy = correct / total_predictions
         
-        # if batch_idx < 6:
+    if config.metric == 'auc':
+        epoch_metric = auc_scores.sum() / num_val_examples
+    else: 
+        epoch_metric = correct / total_predictions
             
     
     # epoch_loss = epoch_loss / num_val_examples
     # epoch_accuracy = correct / len(val_loader.dataset)
     
     print(f'*** VALIDATION ***')
-    print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
+    print(f'epoch_loss: {epoch_loss} \n {metric_name} {epoch_metric}')
 
     log = {
         "Validation/Loss": epoch_loss,
-        "Validation/Accuracy": epoch_accuracy
+        metric_name: epoch_metric
     }
 
     if is_imported('wandb'):
         wandb.log(log)
 
-    return (epoch_loss, epoch_accuracy)
+    return (epoch_loss, epoch_metric)
+
 
 def visualize_evaluation(epoch, model, table, vis_loader, config, device):
     """Visualize validation result in a Weights & Biases Table"""
@@ -730,11 +781,20 @@ def test_model(model, loss, test_loader, device, config):
     model.eval()
     epoch_loss, correct, total_predictions = 0, 0, 0
     num_test_examples = len(test_loader)
+
+
+    if config.metric == 'auc':
+        metric_name = "Test/AUC_Score"
+        auc_scores = np.zeros(num_test_examples)
+    else:
+        metric_name = "Test/Accuracy"
     
+
     progress_bar = tqdm(
         range(num_test_examples),
         desc=f"Testing model"
     )
+
     for batch_idx in progress_bar:
         data = next(iter(test_loader)).to(device)
         
@@ -747,24 +807,34 @@ def test_model(model, loss, test_loader, device, config):
 
         epoch_loss += l.item()
         class_pred = prediction.max(1)[1]
-        correct += class_pred.eq(data['y']).sum().item()
-        total_predictions += data['x'].shape[0]
-    
+
+        if config.metric == 'auc':
+            auc_scores[batch_idx] = get_metric(class_pred, data['y'])
+        else:
+            correct += class_pred.eq(data['y']).sum().item()
+            total_predictions += data['x'].shape[0]
+
+        # correct += class_pred.eq(data['y']).sum().item()
+        # total_predictions += data['x'].shape[0]
+
+
+    if config.metric == 'auc':
+        # calc average auc score
+        epoch_metric = auc_scores.sum() / num_test_examples
+    else: 
+        epoch_metric = correct / total_predictions
+
     epoch_loss = epoch_loss / num_test_examples
-    epoch_accuracy = correct / total_predictions
-        
-        # if batch_idx < 6:
+
+    # epoch_accuracy = correct / total_predictions
             
     
-    # epoch_loss = epoch_loss / num_val_examples
-    # epoch_accuracy = correct / len(val_loader.dataset)
-    
     print(f'*** TESTING ***')
-    print(f'epoch_loss: {epoch_loss} \n epoch_accuracy {epoch_accuracy}')
+    print(f'epoch_loss: {epoch_loss} \n {metric_name} {epoch_metric}')
 
     log = {
         "Test/Loss": epoch_loss,
-        "Test/Accuracy": epoch_accuracy
+        metric_name: epoch_metric
     }
 
     if is_imported('wandb'):
@@ -832,6 +902,7 @@ if __name__ == "__main__":
         parser.add_argument('--train_hyperparams', default='False', help='Hyper param tuning [default: False]')
         parser.add_argument('--use_drive_storage', default='False', help='Store results in connected Google Drive [default: False]')
         parser.add_argument('--existing_study', default='None', help='existing study can be passed to continue a started study that has not been finished [default: None]')
+        parser.add_argument('--metric', default='accuracy', help='define metric to be used for evaluation \{auc, accuracy\} [default: accuracy]')
         # FLAGS = parser.parse_args()
 
     FLAGS = parser.parse_args()
