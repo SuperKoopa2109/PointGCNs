@@ -360,6 +360,7 @@ def objective(trial):
     config.study_name = trial.study.study_name
     config.model_name = "GSegNet"
     config.categories = "Airplane"
+    config.metric = FLAGS.metric
     config.savedir = "data"
     config.logdir = LOG_DIR
     config.radius_threshold = trial.suggest_float('radius_threshold', low=0.02, high=0.06, step=0.02, log=False)
