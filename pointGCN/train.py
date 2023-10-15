@@ -118,14 +118,14 @@ class Custom_Parser():
         return self
     
 class Config():
-            def __init__(self, kwconf = None, **kwargs):
-                if kwconf is not None:
-                    self.conf = {}
-                    for key, val in kwconf.items():
-                        setattr(self, key, val)
-                        
-            def __getitem__(self, key):
-                return getattr(self, key)
+    def __init__(self, kwconf = None, **kwargs):
+        if kwconf is not None:
+            self.conf = {}
+            for key, val in kwconf.items():
+                setattr(self, key, val)
+                
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 
@@ -444,7 +444,7 @@ def objective(trial):
             wandb.log({"PredClass_vs_TrueClass": table})
             wandb.finish()
 
-    return res['Test/Accuracy']
+    return val_accuracy #res['Test/Accuracy']
 
 
 def train(FLAGS):
@@ -501,6 +501,11 @@ def train(FLAGS):
 
         else:
             print(f'{modulename} not imported || Run will only be logged locally')
+
+            config = Config({
+                "model_name": "GSegNet",
+                "categories": "Airplane",
+            })
 
         config.seed = 42
         config.model_name = "ShapeNet"
@@ -582,6 +587,54 @@ def train(FLAGS):
             wandb.log({"PredClass_vs_TrueClass": table})
             wandb.finish()
 
+def get_model(FLAGS):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    config = Config({
+        "model_name": "GSegNet",
+        "categories": "Airplane",
+    })
+
+    config.seed = 42
+    config.model_name = "ShapeNet"
+    config.categories = "Airplane"
+    config.metric = FLAGS.metric
+    config.savedir = "data"
+    config.logdir = LOG_DIR
+    config.batch_size = 32
+    config.num_workers = 1
+    config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
+    config.epochs = FLAGS.epochs
+    config.embed_dim = 64
+    config.hidden_layers = FLAGS.layers
+    config.conv_layer = 'SAGEConv' #, 'GATConv', 'GCNConv'
+    config.hidden_dim = 128
+    config.learning_rate = 1e-5 #, 1e-2
+    config.drop_rate = 0.0
+    config.negative_slope = 0.0 #, 0.2
+    config.norm_layer = 'Batch' # "None", "Batch", "Instance"
+
+    seed_everything(config.seed)
+
+    train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader, vis_loader = load_data(config)
+
+    sample = next(iter(train_dataset))
+    
+    
+    model = load_model(
+        modelname = 'SageNet', 
+        input_dim = sample['x'].shape[1], 
+        embed_dim=config.embed_dim, 
+        hidden_dim=config.hidden_dim,  #dimensions of first hidden layer
+        conv_type=config.conv_layer,
+        no_of_layers = config.hidden_layers,
+        class_num=int(sample['y'].max() + 1),
+        drop_rate = config.drop_rate,
+        negative_slope = config.negative_slope, 
+        norm = config.norm_layer
+    ).to(device)
+
+    return model
 
 
 def train_step(epoch, model, optimizer, loss, train_loader, device, config):

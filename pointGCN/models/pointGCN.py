@@ -19,62 +19,62 @@ from tqdm import tqdm
 
 # MODELS
 
-class generic_class():
-    def __init__(self, something):
-        self.sth = something
+# class generic_class():
+#     def __init__(self, something):
+#         self.sth = something
 
-    def read(self):
-        return self.sth
+#     def read(self):
+#         return self.sth
 
-class generic_model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, embed_dim, class_num=6, norm='None'):
-        super().__init__()
+# class generic_model(nn.Module):
+#     def __init__(self, input_dim, hidden_dim, embed_dim, class_num=6, norm='None'):
+#         super().__init__()
         
-        self.input_dim = input_dim
-        self.embed_dim = embed_dim
-        self.hidden_dim = hidden_dim
-        self.class_num = class_num
+#         self.input_dim = input_dim
+#         self.embed_dim = embed_dim
+#         self.hidden_dim = hidden_dim
+#         self.class_num = class_num
 
-        if norm == 'Batch':
-            self.node_embeder = nn.Sequential(
-                [
-                    nn.Linear(input_dim, hidden_dim),
-                    nn.BatchNorm2d(hidden_dim, eps=1e-05, momentum=0.1), #, affine=True, track_running_stats=True, device=None, dtype=None)
-                    nn.ReLU(inplace = True), # leaky ReLU instead?? 
-                    nn.Linear(hidden_dim, embed_dim),
-                    nn.BatchNorm2d(embed_dim, eps=1e-05, momentum=0.1), #, affine=True, track_running_stats=True, device=None, dtype=None)
-                    nn.ReLU(inplace = True),
-                    nn.Linear(embed_dim, class_num)
-                ]
-            )
+#         if norm == 'Batch':
+#             self.node_embeder = nn.Sequential(
+#                 [
+#                     nn.Linear(input_dim, hidden_dim),
+#                     nn.BatchNorm2d(hidden_dim, eps=1e-05, momentum=0.1), #, affine=True, track_running_stats=True, device=None, dtype=None)
+#                     nn.ReLU(inplace = True), # leaky ReLU instead?? 
+#                     nn.Linear(hidden_dim, embed_dim),
+#                     nn.BatchNorm2d(embed_dim, eps=1e-05, momentum=0.1), #, affine=True, track_running_stats=True, device=None, dtype=None)
+#                     nn.ReLU(inplace = True),
+#                     nn.Linear(embed_dim, class_num)
+#                 ]
+#             )
 
-        elif norm == 'Instance':
-            self.node_embeder = nn.Sequential(
-                [
-                    nn.Linear(input_dim, hidden_dim),
-                    nn.InstanceNorm2d(hidden_dim, eps=1e-05, momentum=0.1), #, affine=False, track_running_stats=False, device=None, dtype=None)
-                    nn.ReLU(inplace = True), # leaky ReLU instead?? 
-                    nn.Linear(hidden_dim, embed_dim),
-                    nn.InstanceNorm2d(embed_dim, eps=1e-05, momentum=0.1), #, affine=False, track_running_stats=False, device=None, dtype=None)
-                    nn.ReLU(inplace = True),
-                    nn.Linear(embed_dim, class_num)
-                ]
-            )
+#         elif norm == 'Instance':
+#             self.node_embeder = nn.Sequential(
+#                 [
+#                     nn.Linear(input_dim, hidden_dim),
+#                     nn.InstanceNorm2d(hidden_dim, eps=1e-05, momentum=0.1), #, affine=False, track_running_stats=False, device=None, dtype=None)
+#                     nn.ReLU(inplace = True), # leaky ReLU instead?? 
+#                     nn.Linear(hidden_dim, embed_dim),
+#                     nn.InstanceNorm2d(embed_dim, eps=1e-05, momentum=0.1), #, affine=False, track_running_stats=False, device=None, dtype=None)
+#                     nn.ReLU(inplace = True),
+#                     nn.Linear(embed_dim, class_num)
+#                 ]
+#             )
 
-        else:
-            self.node_embeder = nn.Sequential(
-                [
-                    nn.Linear(input_dim, hidden_dim),
-                    nn.ReLU(inplace = True), # leaky ReLU instead?? 
-                    nn.Linear(hidden_dim, embed_dim),
-                    nn.ReLU(inplace = True),
-                    nn.Linear(embed_dim, class_num)
-                ]
-            )
+#         else:
+#             self.node_embeder = nn.Sequential(
+#                 [
+#                     nn.Linear(input_dim, hidden_dim),
+#                     nn.ReLU(inplace = True), # leaky ReLU instead?? 
+#                     nn.Linear(hidden_dim, embed_dim),
+#                     nn.ReLU(inplace = True),
+#                     nn.Linear(embed_dim, class_num)
+#                 ]
+#             )
     
-    def forward(self, data):
+#     def forward(self, data):
         
-        return self.node_embeder(data['pos'])
+#         return self.node_embeder(data['pos'])
 
 
 class seg_model(nn.Module):
