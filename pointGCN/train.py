@@ -489,15 +489,25 @@ def train(FLAGS):
         modulename = 'wandb'
         if is_imported(modulename):
             wandb.init(
-                project=wandb_project, 
-                #name=wandb_run_name, 
-                job_type="baseline-train"
-                )
-
+                    project=wandb_project, 
+                    #name=wandb_run_name, 
+                    job_type="baseline-train"
+                    )
+            
             wandb_run_name = wandb.run.name
 
-            # Set experiment configs to be synced with wandb
             config = wandb.config
+
+            if FLAGS.existing_config == 'True':
+
+                wandb_api = wandb.Api()
+
+                wandb_ref_run = wandb_api.run(FLAGS.wandb_ref_run)
+
+                config = wandb_ref_run.config
+
+                # Set experiment configs to be synced with wandb
+                
 
         else:
             print(f'{modulename} not imported || Run will only be logged locally')
@@ -507,26 +517,29 @@ def train(FLAGS):
                 "categories": "Airplane",
             })
 
-        config.seed = 42
-        config.model_name = "ShapeNet"
-        config.categories = "Airplane"
-        config.metric = FLAGS.metric
-        config.savedir = "data"
-        config.logdir = LOG_DIR
-        config.batch_size = 32
-        config.num_workers = 1
-        config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
-        config.epochs = FLAGS.epochs
-        config.embed_dim = 64
-        config.hidden_layers = FLAGS.layers
-        config.conv_layer = 'SAGEConv' #, 'GATConv', 'GCNConv'
-        config.hidden_dim = 128
-        config.learning_rate = 1e-5 #, 1e-2
-        config.drop_rate = 0.0
-        config.negative_slope = 0.0 #, 0.2
-        config.norm_layer = 'Batch' # "None", "Batch", "Instance"
-        config.vis_sample_size = 3
-        config.wandb_run_name = wandb_run_name
+        
+        if FLAGS.existing_config != 'True':
+
+            config.seed = 42
+            config.model_name = "ShapeNet"
+            config.categories = "Airplane"
+            config.metric = FLAGS.metric
+            config.savedir = "data"
+            config.logdir = LOG_DIR
+            config.batch_size = 32
+            config.num_workers = 1
+            config.optimizer = "Adam" # Could be done in the future: trial.suggest_categorical("optimizer", ["MomentumSGD", "Adam"])
+            config.epochs = FLAGS.epochs
+            config.embed_dim = 64
+            config.hidden_layers = FLAGS.layers
+            config.conv_layer = 'SAGEConv' #, 'GATConv', 'GCNConv'
+            config.hidden_dim = 128
+            config.learning_rate = 1e-5 #, 1e-2
+            config.drop_rate = 0.0
+            config.negative_slope = 0.0 #, 0.2
+            config.norm_layer = 'Batch' # "None", "Batch", "Instance"
+            config.vis_sample_size = 3
+            config.wandb_run_name = wandb_run_name
 
         seed_everything(config.seed)
 
@@ -585,6 +598,30 @@ def train(FLAGS):
 
         if is_imported('wandb'):
             wandb.log({"PredClass_vs_TrueClass": table})
+
+            # save model if wanted
+            if FLAGS.save_model == "True":
+                # Save your model.
+
+                now = datetime.datetime.now()
+                date_time = now.strftime("%Y_%m_%d_%H_%M")
+
+                model_save_name = "pointGCN_model_" + date_time
+                
+                if FLAGS.use_drive_storage == "True":
+                    model_save_path = os.path.join('drive', 'MyDrive', 'PointGCN', 'logs', 'models')
+                else:
+                    model_save_path = '/'
+
+                torch.save(model.state_dict(), os.path.join(model_save_path, model_save_name))
+                
+                # Save as artifact for version control.
+                artifact = wandb.Artifact('model', type='model')
+
+
+                artifact.add_file(os.path.join(model_save_path, model_save_name))
+                wandb.log_artifact(artifact)
+
             wandb.finish()
 
 def get_model(FLAGS):
@@ -957,6 +994,10 @@ if __name__ == "__main__":
         parser.add_argument('--use_drive_storage', default='False', help='Store results in connected Google Drive [default: False]')
         parser.add_argument('--existing_study', default='None', help='existing study can be passed to continue a started study that has not been finished [default: None]')
         parser.add_argument('--metric', default='accuracy', help='define metric to be used for evaluation \{auc, accuracy\} [default: accuracy]')
+        parser.add_argument('--existing_config', default='False', help='use existing config from wandb run; requires wandb_run to be set [default: False]')
+        parser.add_argument('--wandb_ref_run', default='None', help='name of existing wandb run to get its configuration; only relevant if existing_config is True [default: None]')
+        parser.add_argument('--save_model', default='False', help='decide whether model is supposed to be saved; currently not for hyper param training [default: False]')
+        
         # FLAGS = parser.parse_args()
 
     FLAGS = parser.parse_args()
