@@ -513,7 +513,7 @@ def train(FLAGS):
 
             wandb_ref_run = wandb_api.run(FLAGS.wandb_ref_run)
 
-            for key, value in wandb_ref_run.config:
+            for key, value in wandb_ref_run.config.items():
                 config[key] = value
 
         else:
