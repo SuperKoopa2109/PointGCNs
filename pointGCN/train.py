@@ -516,6 +516,11 @@ def train(FLAGS):
             for key, value in wandb_ref_run.config.items():
                 config[key] = value
 
+                if "metric" not in config:
+                    config.metric = "accuracy"
+
+                
+
         else:
 
             config.seed = 42
