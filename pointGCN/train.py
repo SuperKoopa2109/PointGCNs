@@ -497,16 +497,6 @@ def train(FLAGS):
             wandb_run_name = wandb.run.name
 
             config = wandb.config
-
-            if FLAGS.existing_config == 'True':
-
-                wandb_api = wandb.Api()
-
-                wandb_ref_run = wandb_api.run(FLAGS.wandb_ref_run)
-
-                config = wandb_ref_run.config
-
-                # Set experiment configs to be synced with wandb
                 
 
         else:
@@ -517,8 +507,16 @@ def train(FLAGS):
                 "categories": "Airplane",
             })
 
-        
-        if FLAGS.existing_config != 'True':
+        if FLAGS.existing_config == 'True':
+
+            wandb_api = wandb.Api()
+
+            wandb_ref_run = wandb_api.run(FLAGS.wandb_ref_run)
+
+            for key, value in wandb_ref_run.config:
+                config[key] = value
+
+        else:
 
             config.seed = 42
             config.model_name = "ShapeNet"
