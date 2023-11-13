@@ -1,0 +1,50 @@
+{
+    "os": "Windows-10-10.0.22621-SP0",
+    "python": "3.10.8",
+    "heartbeatAt": "2023-08-07T11:58:27.309776",
+    "startedAt": "2023-08-07T11:58:25.953709",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "C:\\Niklas\\Studies\\16_GCNN\\3D_PointCloud\\PointGCNs\\pointGCN\\train.py",
+    "codePath": "pointGCN\\train.py",
+    "git": {
+        "remote": "git@github.com:SuperKoopa2109/PointGCNs.git",
+        "commit": "567ac02417c32f3dc6457042f9242c2967f9801b"
+    },
+    "email": "niklaskaspareit@gmail.com",
+    "root": "C:/Niklas/Studies/16_GCNN/3D_PointCloud/PointGCNs",
+    "host": "LAPTOP-TN4U60SD",
+    "username": "lisat",
+    "executable": "C:\\Users\\lisat\\anaconda3\\envs\\torch\\python.exe",
+    "cpu_count": 4,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 796.0,
+        "min": 0.0,
+        "max": 1992.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 796.0,
+            "min": 0.0,
+            "max": 1992.0
+        }
+    ],
+    "disk": {
+        "total": 475.57226181030273,
+        "used": 439.92796325683594
+    },
+    "gpu": "NVIDIA GeForce MX250",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce MX250",
+            "memory_total": 2147483648
+        }
+    ],
+    "memory": {
+        "total": 15.753646850585938
+    }
+}

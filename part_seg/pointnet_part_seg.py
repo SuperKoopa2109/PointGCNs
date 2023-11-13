@@ -140,6 +140,7 @@ def get_model(point_cloud, input_label, is_training, cat_num, part_num, \
     return net, net2, end_points
 
 def get_loss(l_pred, seg_pred, label, seg, weight, end_points):
+    # if training with cross entropy, always use softmax
     per_instance_label_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=l_pred, labels=label)
     label_loss = tf.reduce_mean(per_instance_label_loss)
 
