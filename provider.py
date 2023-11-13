@@ -4,7 +4,8 @@ import numpy as np
 import h5py
 
 import torch_geometric.transforms as T
-from torch_geometric.datasets import ShapeNet #ModelNet
+#from torch_geometric.datasets import ShapeNet #ModelNet
+from part_seg.dataset.shapenet_loader import ShapeNet
 from torch_geometric.loader import DataLoader
 
 from param_config import param_config
@@ -35,15 +36,47 @@ elif param_config.get_value('system', 'dataset') == 'shapenet':
 
         category = "Airplane"
 
+        # train_dataset = ShapeNet(
+        #                     root=os.path.join(BASE_DIR, 'data', DATASET), 
+        #                     categories=category, 
+        #                     split='trainval')
+        
+        # test_dataset = ShapeNet(
+        #                     root=os.path.join(BASE_DIR, 'data', DATASET), 
+        #                     categories=category, 
+        #                     split='test')
+        
+        # TMP CHANGE !!!! 
+
+        no_points_sampled = 2048
+        batch_size = int(param_config.get_value('config', 'batchsize'))
+
         train_dataset = ShapeNet(
                             root=os.path.join(BASE_DIR, 'data', DATASET), 
                             categories=category, 
+                            pre_transform=T.Compose([
+                                    T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True)
+                                        ]),
                             split='trainval')
-        
+
         test_dataset = ShapeNet(
                             root=os.path.join(BASE_DIR, 'data', DATASET), 
-                            categories=category, 
+                            categories=category,
+                            pre_transform=T.Compose([
+                                    T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True)
+                                        ]), 
                             split='test')
+
+        val_dataset = ShapeNet(
+            root=os.path.join(BASE_DIR, 'data', DATASET), 
+            categories=category, 
+            pre_transform=T.Compose([
+                                    T.FixedPoints(no_points_sampled,replace = False, allow_duplicates = True)
+                                        ]),
+            split = "val"
+        )
+
+        # END TMP CHANGE !!!!
 
 
 def shuffle_data(data, labels):
@@ -127,55 +160,173 @@ def load_h5(h5_filename):
 def loadDataFile(filename):
     return load_h5(filename)
 
-def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start_idx=0):
+def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start_idx=0, visualize=False, vis_samples=None):
     # h5_filename can also be used as a batch_size for shapenet dataset from pytorch geometric
     # Load data for 
     if param_config.get_value('system', 'dataset') == 'shapenet': 
         global train_dataset
         global test_dataset
+
+        global train_loader
+        global test_loader
+        global val_loader
+        global vis_loader
         category = "Airplane"
         
         data = np.zeros([h5_filename, max_points, 3])
         label = np.zeros([h5_filename], dtype=np.int32)
         seg = np.zeros([h5_filename, max_points], dtype=np.int32)
-
-        # TODO: what if pointcloud has less than max points? -> currently data is disregarded. Might end up in not having same length for batch!!
-        small_pointclouds = 0
+        pos = np.zeros([h5_filename, max_points, 3]) # 3 dims for x,y,z coordinates
         
+        batch_size = int(param_config.get_value('config', 'batchsize'))
+
+        if is_training:
+            
+            end_idx = min(start_idx + h5_filename, len(train_dataset) - 1 )
+
+            train_loader = DataLoader(
+                train_dataset[start_idx:end_idx],
+                batch_size=1,
+                shuffle=True
+            )
+
+            train_iter = iter(train_loader)
+
+            for idx in range(end_idx - start_idx):
+                batch = next(train_iter)
+                data_batch, label_batch, seg_batch = batch['x'].numpy(), batch['category'].numpy(), batch['y'].numpy()
+                
+                data[idx] = data_batch
+                label[idx] = label_batch
+                seg[idx] = seg_batch
+            
+            return (data, label, seg)
+
+        else:
+            
+            if visualize:
+
+                # vis_sample_size = 3
+
+                # vis_indices = [1,2,21] #np.random.choice(range(len(val_dataset)), size = vis_sample_size, replace = False)
+                
+                # assert(len(vis_indices) <= vis_sample_size)
+
+                vis_loader = DataLoader(
+                    val_dataset,
+                    batch_size = 1,
+                    shuffle = False
+                )
+
+                vis_iter = iter(vis_loader)
+
+                for idx in range(h5_filename):
+                    batch = next(vis_iter)
+                    data_batch, label_batch, seg_batch = batch['x'].numpy(), batch['category'].numpy(), batch['y'].numpy()
+                    pos_batch = batch['pos'].numpy()
+                    
+                    data[idx] = data_batch
+                    label[idx] = label_batch
+                    seg[idx] = seg_batch
+                    pos[idx] = pos_batch 
+
+                return (data, label, seg, pos)
+
+            else:
+
+                end_idx = min(start_idx + h5_filename, len(train_dataset) - 1 )
+
+                val_loader = DataLoader(
+                    val_dataset[start_idx:end_idx],
+                    batch_size=1,
+                    shuffle=True
+                )
+
+                val_iter = iter(val_loader)
+
+                for idx in range(end_idx - start_idx):
+                    batch = next(val_iter)
+                    data_batch, label_batch, seg_batch = batch['x'].numpy(), batch['category'].numpy(), batch['y'].numpy()
+                    
+                    data[idx] = data_batch
+                    label[idx] = label_batch
+                    seg[idx] = seg_batch
+                
+                return (data, label, seg)
+
+        # END TMP CHANGE !!!! #
+
         if is_training:
             for i in range(start_idx, min(start_idx + h5_filename, len(train_dataset) - 1 )):
                 data_batch, label_batch, seg_batch = train_dataset[i]['x'].numpy(), train_dataset[i]['category'].numpy(), train_dataset[i]['y'].numpy()
+                if visualize:
+                    pos_batch = train_dataset[i]['pos'].numpy()
                 if data_batch.shape[0] > max_points:
                     data_batch = data_batch[:max_points]
                     seg_batch = seg_batch[:max_points]
+                    if visualize:
+                        pos_batch = pos_batch[:max_points]
                 elif data_batch.shape[0] < max_points:
                     while data_batch.shape[0] < max_points:
                         # if pointcloud does not contain enough points, add a random duplicate -> should not be too bad, as there are very few cases like this; also not optimal though TODO
                         rnd_idx = np.random.randint(h5_filename)
                         data_batch, label_batch, seg_batch = train_dataset[rnd_idx]['x'].numpy(), train_dataset[rnd_idx]['category'].numpy(), train_dataset[rnd_idx]['y'].numpy()
+                        if visualize:
+                            pos_batch = train_dataset[rnd_idx]['pos'].numpy()
                         if data_batch.shape[0] > max_points:
                             data_batch = data_batch[:max_points]
                             seg_batch = seg_batch[:max_points]
+                            if visualize:
+                                pos_batch = pos_batch[:max_points]
                 data[i - start_idx] = data_batch
                 label[i - start_idx] = label_batch
                 seg[i - start_idx] = seg_batch
+                
+                if visualize:
+                    # print(f'pos_batch {pos_batch}')
+                    # print(f'pos.shape {pos.shape}')
+                    # print(f'pos_batch.shape {pos_batch.shape}')
+                    pos[i-start_idx] = pos_batch
+
+                if visualize:
+                    return (data, label, seg, pos)
         else:
             for i in range(start_idx, min(start_idx + h5_filename, len(test_dataset) - 1 )):
                 data_batch, label_batch, seg_batch = test_dataset[i]['x'].numpy(), test_dataset[i]['category'].numpy(), test_dataset[i]['y'].numpy()
+                if visualize:
+                    pos_batch = test_dataset[i]['pos'].numpy()
                 if data_batch.shape[0] > max_points:
                     data_batch = data_batch[:max_points]
                     seg_batch = seg_batch[:max_points]
+                    if visualize:
+                        pos_batch = pos_batch[:max_points]
                 elif data_batch.shape[0] < max_points:
                     while data_batch.shape[0] < max_points:
                         # if pointcloud does not contain enough points, add a random duplicate -> should not be too bad, as there are very few cases like this; also not optimal though TODO
                         rnd_idx = np.random.randint(h5_filename)
                         data_batch, label_batch, seg_batch = test_dataset[rnd_idx]['x'].numpy(), test_dataset[rnd_idx]['category'].numpy(), test_dataset[rnd_idx]['y'].numpy()
+                        if visualize:
+                            pos_batch = test_dataset[rnd_idx]['pos'].numpy()
                         if data_batch.shape[0] > max_points:
                             data_batch = data_batch[:max_points]
                             seg_batch = seg_batch[:max_points]
+                            if visualize:
+                                pos_batch = pos_batch[:max_points]
                 data[i - start_idx] = data_batch
                 label[i - start_idx] = label_batch
                 seg[i - start_idx] = seg_batch
+
+                if visualize:
+                    # print('----')
+                    # print(f'pos_batch {pos_batch}')
+                    # print(f'pos_batch.shape {pos_batch.shape}')
+                    
+                    pos[i - start_idx] = pos_batch
+                    # print(f'pos {pos}')
+                    # print('----')
+
+                if visualize:
+                    return (data, label, seg, pos)
             
             
 
@@ -219,5 +370,5 @@ def load_h5_data_label_seg(h5_filename, is_training=True, max_points=2048, start
     return (data, label, seg)
 
 
-def loadDataFile_with_seg(filename, is_training=True, max_points=2048, start_idx=0):
-    return load_h5_data_label_seg(filename, is_training=is_training, max_points=max_points, start_idx=start_idx)
+def loadDataFile_with_seg(filename, is_training=True, max_points=2048, start_idx=0, visualize=False):
+    return load_h5_data_label_seg(filename, is_training=is_training, max_points=max_points, start_idx=start_idx, visualize=visualize)

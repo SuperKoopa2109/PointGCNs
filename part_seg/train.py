@@ -7,7 +7,13 @@ import json
 import os
 import sys
 
+import torch
+import random
+
 import wandb
+
+# TMP IMPORT!!
+import matplotlib.pyplot as plt
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
@@ -33,6 +39,7 @@ parser.add_argument('--dataset', default='modelnet40', help='Dataset to be used 
 parser.add_argument('--colab', default='False', help='Code is executed in Google colab')
 parser.add_argument('--use_drive', default='False', help='results are stored in google drive [default: False]')
 parser.add_argument('--use_wandb', default='False', help='results are stored in weights and biases [default: False]')
+parser.add_argument('--random_seed', type=int, default=42, help='random seed used [default: 42]')
 FLAGS = parser.parse_args()
 
 print(f"*******BASE_DIR: {param_config.get_value('paths', 'BASE_DIR')}*******")
@@ -40,6 +47,7 @@ param_config.set_value('system', 'dataset', FLAGS.dataset)
 param_config.set_value('system', 'RunningInCOLAB', FLAGS.colab)
 param_config.set_value('system', 'use_drive', FLAGS.use_drive)
 param_config.set_value('system', 'use_wandb', FLAGS.use_wandb)
+param_config.set_value('config', 'batchsize', str(FLAGS.batch))
 param_config.save()
 
 import provider
@@ -49,8 +57,22 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()  # Enable TensorFlow 1 compatibility mode
 
 import torch_geometric.transforms as T
-from torch_geometric.datasets import ShapeNet #ModelNet
-from torch_geometric.loader import DataLoader
+# from torch_geometric.datasets import ShapeNet #ModelNet
+# from torch_geometric.loader import DataLoader
+
+def seed_everything(seed: int):
+    r"""Sets the seed for generating random numbers in :pytorch:`PyTorch`,
+    :obj:`numpy` and Python.
+
+    Args:
+        seed (int): The desired seed.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+seed_everything(FLAGS.random_seed)
 
 hdf5_data_dir = os.path.join(BASE_DIR, 'hdf5_data')
 
@@ -62,18 +84,29 @@ output_dir = FLAGS.output_dir
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
-color_map_file = os.path.join(hdf5_data_dir, 'part_color_mapping.json')
-color_map = json.load(open(color_map_file, 'r'))
 
-all_obj_cats_file = os.path.join(hdf5_data_dir, 'all_object_categories.txt')
-fin = open(all_obj_cats_file, 'r')
-lines = [line.rstrip() for line in fin.readlines()]
-all_obj_cats = [(line.split()[0], line.split()[1]) for line in lines]
-fin.close()
+if param_config.get_value('system', 'dataset') != 'shapenet':
+    color_map_file = os.path.join(hdf5_data_dir, 'part_color_mapping.json')
+    color_map = json.load(open(color_map_file, 'r'))
 
-all_cats = json.load(open(os.path.join(hdf5_data_dir, 'overallid_to_catid_partid.json'), 'r'))
-NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
-NUM_PART_CATS = len(all_cats)
+    all_obj_cats_file = os.path.join(hdf5_data_dir, 'all_object_categories.txt')
+    fin = open(all_obj_cats_file, 'r')
+    lines = [line.rstrip() for line in fin.readlines()]
+    all_obj_cats = [(line.split()[0], line.split()[1]) for line in lines]
+    fin.close()
+
+    all_cats = json.load(open(os.path.join(hdf5_data_dir, 'overallid_to_catid_partid.json'), 'r'))
+    NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
+    NUM_PART_CATS = len(all_cats)
+else:
+    color_map_file = os.path.join(BASE_DIR, 'util', 'part_color_mapping.json')
+    color_map = json.load(open(color_map_file, 'r'))
+
+
+
+    NUM_CATEGORIES = 1 #16  ## JUST TRAINING FOR AIRPLANE!!! 
+    NUM_PART_CATS = 4 # only four parts for airplane !!!
+    all_obj_cats = [('Airplane', '02691156')] # only for airplane
 
 print('#### Batch Size: {0}'.format(batch_size))
 print('#### Point Number: {0}'.format(point_num))
@@ -264,19 +297,18 @@ def train():
         def train_one_epoch(train_file_idx, epoch_num):
             is_training = True
 
-
             # TODO: get file len; think of what should be in one batch/"train_file" and load that from dataset
             for i in range(num_train_file):
                 
                 if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
-                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(512, i * 512)
+                    cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(512, start_idx = i * 512)
                 else:
                     cur_train_filename = os.path.join(hdf5_data_dir, train_file_list[train_file_idx[i]])
                     printout(flog, 'Loading train file ' + cur_train_filename)
                     cur_data, cur_labels, cur_seg = provider.loadDataFile_with_seg(cur_train_filename)
 
-                cur_data, cur_labels, order = provider.shuffle_data(cur_data, np.squeeze(cur_labels))
-                cur_seg = cur_seg[order, ...]
+                # cur_data, cur_labels, order = provider.shuffle_data(cur_data, np.squeeze(cur_labels))
+                # cur_seg = cur_seg[order, ...]
 
                 cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
 
@@ -377,6 +409,11 @@ def train():
 
                 cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
 
+                # print(f'cur_data.shape {cur_data.shape}')
+                # print(f'cur_labels.shape {cur_labels.shape}')
+                # print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
+                # print(f'seg_ph.shape {seg_ph.shape}')
+
                 num_data = len(cur_labels)
                 num_batch = num_data // batch_size
 
@@ -390,6 +427,11 @@ def train():
                             seg_ph: cur_seg[begidx: endidx, ...],
                             is_training_ph: is_training, 
                             }
+
+                    # labels = ['labels_ph', 'input_label_ph', 'seg_ph']
+                    # for idx, val in enumerate(feed_dict.values()):
+                    #     if idx > 0 and idx < 4:
+                    #         print(labels[idx - 1], val)
 
                     loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
                             per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
@@ -445,12 +487,143 @@ def train():
 
             return (total_loss, total_label_loss, total_label_acc, total_seg_loss, total_seg_acc)
 
+        def visualize_one_epoch(epoch, table, vis_no = 3):
+            if param_config.get_value('system', 'dataset') == 'shapenet': #FLAGS.dataset == 'shapenet':
+                is_training = False
+
+                total_loss = 0.0
+                total_label_loss = 0.0
+                total_seg_loss = 0.0
+                total_label_acc = 0.0
+                total_seg_acc = 0.0
+                total_seen = 0
+
+                total_label_acc_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.float32)
+                total_seg_acc_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.float32)
+                total_seen_per_cat = np.zeros((NUM_CATEGORIES)).astype(np.int32)
+
+                predictions = []
+                ground_truths = []
+
+                vis_indices = [1,2,21]
+
+                cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(batch_size, is_training=False, start_idx = 0, visualize=True)
+                
+                begidx = 0
+                endidx = batch_size
+
+                np.squeeze(cur_labels)
+
+                cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
+
+                feed_dict = {
+                    pointclouds_ph: cur_data[begidx: endidx, ...], 
+                    labels_ph: cur_labels[begidx: endidx, ...], 
+                    input_label_ph: cur_labels_one_hot[begidx: endidx, ...], 
+                    seg_ph: cur_seg[begidx: endidx, ...],
+                    is_training_ph: is_training, 
+                    }
+
+                label_pred_val, seg_pred_val, pred_seg_res \
+                    = sess.run([labels_pred, seg_pred, per_instance_seg_pred_res], \
+                    feed_dict=feed_dict)
+
+                for idx in vis_indices:
+                    ground_truths.append(
+                            wandb.Object3D(np.hstack([cur_pos[idx], cur_seg[idx].reshape(-1, 1)]))
+                        )
+
+                    predictions.append(
+                            wandb.Object3D(np.hstack([cur_pos[idx], pred_seg_res[idx].reshape(-1,1)]))
+                        )
+
+                # for i in range(vis_no):
+
+                #     begidx = 0
+                #     endidx = batch_size
+
+                    
+                #     # only load 1 graph at once
+                #     cur_data, cur_labels, cur_seg, cur_pos = provider.loadDataFile_with_seg(32, is_training=False, start_idx = i * 32, visualize=True)
+
+                #     ground_truths.append(
+                #         wandb.Object3D(np.hstack([cur_pos[0], cur_seg[0].reshape(-1, 1)]))
+                #     )
+
+                #     #cur_labels = cur_labels.reshape([1,-1])
+                #     np.squeeze(cur_labels)
+
+                #     cur_labels_one_hot = convert_label_to_one_hot(cur_labels)
+
+                #     # print(f'cur_data.shape {cur_data.shape}')
+                #     # print(f'cur_labels.shape {cur_labels.shape}')
+                #     # print(f'cur_labels_one_hot.shape {cur_labels_one_hot.shape}')
+                #     # print(f'seg_ph.shape {seg_ph.shape}')
+
+                #     feed_dict = {
+                #         pointclouds_ph: cur_data[begidx: endidx, ...], 
+                #         labels_ph: cur_labels[begidx: endidx, ...], 
+                #         input_label_ph: cur_labels_one_hot[begidx: endidx, ...], 
+                #         seg_ph: cur_seg[begidx: endidx, ...],
+                #         is_training_ph: is_training, 
+                #         }
+                    
+                #     # labels = ['labels_ph', 'input_label_ph', 'seg_ph']
+                #     # for idx, val in enumerate(feed_dict.values()):
+                #     #     if idx > 0 and idx < 4:
+                #     #         print(labels[idx - 1], val)
+
+                #     # feed_dict = {
+                #     #         pointclouds_ph: cur_data, 
+                #     #         labels_ph: cur_labels, 
+                #     #         input_label_ph: cur_labels_one_hot, 
+                #     #         seg_ph: cur_seg,
+                #     #         is_training_ph: is_training, 
+                #     #         }
+
+                #     # loss_val, label_loss_val, seg_loss_val, per_instance_label_loss_val, \
+                #     #         per_instance_seg_loss_val, label_pred_val, seg_pred_val, pred_seg_res \
+                #     #         = sess.run([loss, label_loss, seg_loss, per_instance_label_loss, \
+                #     #         per_instance_seg_loss, labels_pred, seg_pred, per_instance_seg_pred_res], \
+                #     #         feed_dict=feed_dict)
+                    
+                #     label_pred_val, seg_pred_val, pred_seg_res \
+                #             = sess.run([labels_pred, seg_pred, per_instance_seg_pred_res], \
+                #             feed_dict=feed_dict)
+
+                #     # print(f'label_pred_val {label_pred_val}')
+                #     # print(f'label_pred_val.shape {label_pred_val.shape}')
+                #     # print(f'seg_pred_val {seg_pred_val}')
+                #     # print(f'seg_pred_val.shape {seg_pred_val.shape}')
+                #     # print(f'pred_seg_res {pred_seg_res}')
+                #     # print(f'pred_seg_res.shape {pred_seg_res.shape}')
+                    
+                #     # print(f'np.hstack() {np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)])}')
+
+                #     predictions.append(
+                #         wandb.Object3D(np.hstack([cur_pos[0], pred_seg_res[0].reshape(-1,1)]))
+                #     )
+
+                    
+
+                # Store 3D models every 5 epochs
+                if ((epoch + 1) % 5 == 0):
+                    table.add_data(
+                        epoch, ground_truths, predictions
+                    )
+                return table
+            else:
+                return None
+
         if not os.path.exists(MODEL_STORAGE_PATH):
             os.mkdir(MODEL_STORAGE_PATH)
 
         for epoch in range(TRAINING_EPOCHES):
             printout(flog, '\n<<< Testing on the test dataset ...')
             total_loss, total_label_loss, total_label_acc, total_seg_loss, total_seg_acc = eval_one_epoch(epoch)
+
+            if param_config.get_value('system', 'use_wandb') == 'True':
+                table = visualize_one_epoch(epoch, table)
 
             if param_config.get_value('system', 'use_wandb') == 'True':
                 wandb.log({
